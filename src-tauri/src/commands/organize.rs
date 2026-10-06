@@ -1,55 +1,13 @@
-//! Comandi invocabili dall'interfaccia. Restano sottili: la logica sta nei
-//! moduli di dominio, qui si collega soltanto lo stato condiviso.
+//! Sezioni e tag.
 
-use std::path::PathBuf;
-
-use serde::Serialize;
 use tauri::State;
 
 use crate::{
     error::AppResult,
-    library::{self, LibraryInfo, LibraryLocation},
     sections::{self, DeletePreview, Section},
     state::AppState,
     tags::{self, Tag},
-    views::{self, ViewCounts},
 };
-
-#[derive(Serialize)]
-#[serde(rename_all = "camelCase")]
-pub struct AppStatus {
-    library: Option<LibraryInfo>,
-    startup_error: Option<String>,
-    default_location: LibraryLocation,
-}
-
-// ── Libreria ────────────────────────────────────────────────────────────────
-
-#[tauri::command]
-pub fn app_status(state: State<AppState>) -> AppResult<AppStatus> {
-    Ok(AppStatus {
-        library: state.library_info(),
-        startup_error: state.startup_error.lock().map(|mut e| e.take()).unwrap_or(None),
-        default_location: library::resolve_location(&state.default_root)?,
-    })
-}
-
-#[tauri::command]
-pub fn resolve_library_location(path: PathBuf) -> AppResult<LibraryLocation> {
-    library::resolve_location(&path)
-}
-
-#[tauri::command]
-pub fn open_library(state: State<AppState>, path: PathBuf) -> AppResult<LibraryInfo> {
-    state.open_library(&path)
-}
-
-#[tauri::command]
-pub fn view_counts(state: State<AppState>) -> AppResult<ViewCounts> {
-    state.with_library(|lib| views::counts(&lib.conn))
-}
-
-// ── Sezioni ─────────────────────────────────────────────────────────────────
 
 #[tauri::command]
 pub fn list_sections(state: State<AppState>) -> AppResult<Vec<Section>> {
@@ -80,8 +38,6 @@ pub fn section_delete_preview(state: State<AppState>, id: i64) -> AppResult<Dele
 pub fn delete_section(state: State<AppState>, id: i64) -> AppResult<()> {
     state.with_library(|lib| sections::delete(&lib.conn, id))
 }
-
-// ── Tag ─────────────────────────────────────────────────────────────────────
 
 #[tauri::command]
 pub fn list_tags(state: State<AppState>) -> AppResult<Vec<Tag>> {

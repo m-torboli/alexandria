@@ -1,7 +1,8 @@
 import { QueryClient, useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 
 import { showError } from "../store/toast";
-import { api } from "./api";
+import type { View } from "../store/ui";
+import { api, type Article } from "./api";
 
 export const queryClient = new QueryClient({
   defaultOptions: {
@@ -15,12 +16,31 @@ export const keys = {
   counts: ["counts"],
   sections: ["sections"],
   tags: ["tags"],
+  /** Prefisso di tutti gli elenchi di articoli. */
+  articles: ["articles"],
+  articleList: (view: View) => ["articles", view] as const,
+  /** Prefisso di tutti i dettagli. */
+  article: ["article"],
+  articleDetail: (id: number) => ["article", id] as const,
 } as const;
+
+/** Dati che dipendono dagli articoli: dopo ogni modifica vanno ricaricati. */
+export const ARTICLE_DEPENDENT = [keys.articles, keys.article, keys.counts, keys.sections, keys.tags] as const;
 
 export const useAppStatus = () => useQuery({ queryKey: keys.status, queryFn: api.appStatus });
 export const useViewCounts = () => useQuery({ queryKey: keys.counts, queryFn: api.viewCounts });
 export const useSections = () => useQuery({ queryKey: keys.sections, queryFn: api.listSections });
 export const useTags = () => useQuery({ queryKey: keys.tags, queryFn: api.listTags });
+
+export const useArticles = (view: View) =>
+  useQuery({ queryKey: keys.articleList(view), queryFn: () => api.listArticles(view) });
+
+export const useArticle = (id: number | null) =>
+  useQuery({
+    queryKey: keys.articleDetail(id ?? -1),
+    queryFn: () => api.getArticle(id!),
+    enabled: id !== null,
+  });
 
 /**
  * Mutazione che, al termine, aggiorna i dati indicati e mostra gli errori
@@ -28,16 +48,26 @@ export const useTags = () => useQuery({ queryKey: keys.tags, queryFn: api.listTa
  */
 export function useAction<A extends unknown[], R>(
   fn: (...args: A) => Promise<R>,
-  invalidate: readonly (readonly string[])[],
+  invalidate: readonly (readonly unknown[])[],
 ) {
   const client = useQueryClient();
   const mutation = useMutation({
     mutationFn: (args: A) => fn(...args),
+    onSuccess: (result) => {
+      // Se la risposta è un articolo aggiornato, lo si mostra subito.
+      if (isArticle(result)) client.setQueryData(keys.articleDetail(result.id), result);
+    },
     onSettled: () => Promise.all(invalidate.map((queryKey) => client.invalidateQueries({ queryKey }))),
     onError: showError,
   });
   return (...args: A): Promise<R | undefined> => mutation.mutateAsync(args).catch(() => undefined);
 }
+
+const isArticle = (value: unknown): value is Article =>
+  typeof value === "object" && value !== null && "sectionIds" in value && "id" in value;
+
+export const refreshArticles = () =>
+  Promise.all(ARTICLE_DEPENDENT.map((queryKey) => queryClient.invalidateQueries({ queryKey })));
 
 /** Dopo il cambio di libreria tutti i dati vanno ricaricati. */
 export const resetAllData = () => queryClient.resetQueries();

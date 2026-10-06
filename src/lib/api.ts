@@ -2,6 +2,8 @@
 
 import { invoke } from "@tauri-apps/api/core";
 
+import type { View } from "../store/ui";
+
 export interface LibraryInfo {
   path: string;
   name: string;
@@ -51,6 +53,77 @@ export interface Tag {
   articleCount: number;
 }
 
+export interface Author {
+  family: string;
+  given: string;
+}
+
+/** 0 = da leggere, 1 = in lettura, 2 = letto. */
+export type ReadingStatus = 0 | 1 | 2;
+
+export interface Metadata {
+  title: string;
+  authors: Author[];
+  year: number | null;
+  journal: string | null;
+  volume: string | null;
+  issue: string | null;
+  pages: string | null;
+  publisher: string | null;
+  doi: string | null;
+  url: string | null;
+  abstract: string | null;
+}
+
+export interface ArticleSummary {
+  id: number;
+  title: string;
+  authors: Author[];
+  year: number | null;
+  journal: string | null;
+  readingStatus: ReadingStatus;
+  favorite: boolean;
+  metadataComplete: boolean;
+  addedAt: string;
+  deletedAt: string | null;
+}
+
+export interface Article extends Metadata {
+  id: number;
+  readingStatus: ReadingStatus;
+  favorite: boolean;
+  metadataComplete: boolean;
+  notes: string;
+  fileName: string | null;
+  fileSize: number | null;
+  pageCount: number | null;
+  addedAt: string;
+  modifiedAt: string;
+  deletedAt: string | null;
+  sectionIds: number[];
+  tagIds: number[];
+}
+
+export interface ImportOutcome {
+  articleId: number;
+  status: "added" | "duplicate" | "duplicateInTrash";
+}
+
+/** Estrae dall'articolo completo i soli campi bibliografici. */
+export const metadataOf = (a: Article): Metadata => ({
+  title: a.title,
+  authors: a.authors,
+  year: a.year,
+  journal: a.journal,
+  volume: a.volume,
+  issue: a.issue,
+  pages: a.pages,
+  publisher: a.publisher,
+  doi: a.doi,
+  url: a.url,
+  abstract: a.abstract,
+});
+
 /** Gli errori del backend arrivano come stringhe già pronte per l'utente. */
 async function call<T>(command: string, args?: Record<string, unknown>): Promise<T> {
   try {
@@ -79,4 +152,24 @@ export const api = {
   createTag: (name: string, color: TagColor) => call<Tag>("create_tag", { name, color }),
   updateTag: (id: number, name: string, color: TagColor) => call<void>("update_tag", { id, name, color }),
   deleteTag: (id: number) => call<void>("delete_tag", { id }),
+
+  listArticles: (view: View) => call<ArticleSummary[]>("list_articles", { view }),
+  getArticle: (id: number) => call<Article>("get_article", { id }),
+  importPdf: (path: string, sectionId: number | null) => call<ImportOutcome>("import_pdf", { path, sectionId }),
+  readArticlePdf: async (id: number) => new Uint8Array(await call<ArrayBuffer>("read_article_pdf", { id })),
+  savePdfInfo: (id: number, text: string, pageCount: number | null, title: string | null) =>
+    call<Article>("save_pdf_info", { id, text, pageCount, title }),
+  lookupDoi: (id: number, doi: string) => call<Article>("lookup_doi", { id, doi }),
+  updateArticleMetadata: (id: number, metadata: Metadata) =>
+    call<Article>("update_article_metadata", { id, metadata }),
+  setReadingStatus: (id: number, status: ReadingStatus) => call<void>("set_reading_status", { id, status }),
+  setFavorite: (id: number, favorite: boolean) => call<void>("set_favorite", { id, favorite }),
+  setArticleSections: (id: number, sectionIds: number[]) => call<void>("set_article_sections", { id, sectionIds }),
+  setArticleTags: (id: number, tagIds: number[]) => call<void>("set_article_tags", { id, tagIds }),
+  trashArticles: (ids: number[]) => call<void>("trash_articles", { ids }),
+  restoreArticles: (ids: number[]) => call<void>("restore_articles", { ids }),
+  deleteArticlesForever: (ids: number[]) => call<void>("delete_articles_forever", { ids }),
+  emptyTrash: () => call<void>("empty_trash"),
+  openArticlePdf: (id: number) => call<void>("open_article_pdf", { id }),
+  revealArticlePdf: (id: number) => call<void>("reveal_article_pdf", { id }),
 };

@@ -4,11 +4,13 @@ import { useSections, useTags } from "../../lib/queries";
 import { useUi } from "../../store/ui";
 import { ArticlePane } from "../articles/ArticlePane";
 import { DetailPane } from "../articles/DetailPane";
+import { useFileDrop } from "../import/useFileDrop";
 import { Sidebar } from "../sidebar/Sidebar";
 import styles from "./Workspace.module.css";
 
 export function Workspace() {
   useFallbackWhenViewDisappears();
+  useFileDrop();
 
   return (
     <div className={styles.workspace}>

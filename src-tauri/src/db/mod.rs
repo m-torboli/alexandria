@@ -6,7 +6,10 @@ use crate::error::{AppError, AppResult};
 
 /// Migrazioni dello schema, applicate in ordine. Non si modificano mai quelle
 /// già rilasciate: ogni cambiamento è una nuova voce in coda.
-const MIGRATIONS: &[&str] = &[include_str!("migrations/001_init.sql")];
+const MIGRATIONS: &[&str] = &[
+    include_str!("migrations/001_init.sql"),
+    include_str!("migrations/002_article_text.sql"),
+];
 
 /// Apre (o crea) il database della libreria e lo porta all'ultima versione.
 pub fn open(path: &Path) -> AppResult<Connection> {

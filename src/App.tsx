@@ -1,3 +1,4 @@
+import { ConfirmHost } from "./components/ConfirmHost";
 import { Toaster } from "./components/Toaster";
 import { useAppStatus } from "./lib/queries";
 import { Welcome } from "./features/welcome/Welcome";
@@ -10,6 +11,7 @@ export default function App() {
     <>
       {status.data && (status.data.library ? <Workspace /> : <Welcome status={status.data} />)}
       {status.error && <p role="alert">{status.error.message}</p>}
+      <ConfirmHost />
       <Toaster />
     </>
   );

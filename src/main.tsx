@@ -19,12 +19,6 @@ if (import.meta.env.PROD) {
   });
 }
 
-// In sviluppo, aperta in un browser normale, l'interfaccia usa un backend simulato.
-if (import.meta.env.DEV && !("__TAURI_INTERNALS__" in window)) {
-  const { installMockBackend } = await import("./dev/mockBackend");
-  installMockBackend();
-}
-
 createRoot(document.getElementById("root")!).render(
   <StrictMode>
     <QueryClientProvider client={queryClient}>

@@ -124,6 +124,32 @@ export function DropdownItem({
   );
 }
 
+/** Voce con spunta che lascia il menu aperto, per scelte multiple. */
+export function DropdownCheckItem({
+  icon,
+  children,
+  checked,
+  indent = 0,
+  onCheckedChange,
+}: ItemProps & { checked: boolean; indent?: number; onCheckedChange: (checked: boolean) => void }) {
+  return (
+    <DropdownMenu.CheckboxItem
+      className={styles.item}
+      checked={checked}
+      onCheckedChange={onCheckedChange}
+      onSelect={(e) => e.preventDefault()}
+      style={{ paddingLeft: 8 + indent * 14 }}
+    >
+      <ItemBody icon={icon}>{children}</ItemBody>
+      <span className={styles.check}>{checked && <Check size={13} />}</span>
+    </DropdownMenu.CheckboxItem>
+  );
+}
+
+export function DropdownLabel({ children }: { children: ReactNode }) {
+  return <DropdownMenu.Label className={styles.menuLabel}>{children}</DropdownMenu.Label>;
+}
+
 export function DropdownSeparator() {
   return <DropdownMenu.Separator className={styles.separator} />;
 }

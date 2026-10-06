@@ -93,3 +93,14 @@
   display: flex;
   width: 14px;
 }
+
+.menuLabel {
+  padding: 6px 8px 4px;
+  color: var(--text-tertiary);
+  font-size: var(--text-sm);
+}
+
+.content:has(.menuLabel) {
+  max-height: min(420px, var(--radix-dropdown-menu-content-available-height, 420px));
+  overflow-y: auto;
+}

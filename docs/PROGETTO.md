@@ -208,8 +208,8 @@ Test automatici su: database e ricerca (Rust), riconoscimento DOI e formattazion
 
 | Tappa | Contenuto | Risultato verificabile |
 |---|---|---|
-| **1. Fondamenta** | Progetto, database, scelta della libreria, sezioni e tag | Si creano e organizzano sezioni |
-| **2. Importazione** | Selezione e trascinamento, copia file, duplicati, DOI e metadati | Si caricano PDF con dati compilati |
+| **1. Fondamenta** ✅ | Progetto, database, scelta della libreria, sezioni e tag | Si creano e organizzano sezioni |
+| **2. Importazione** ✅ | Selezione e trascinamento, copia file, duplicati, DOI e metadati; anticipati stato di lettura, preferiti e Cestino | Si caricano PDF con dati compilati |
 | **3. Ricerca e filtri** | Indice full-text, barra di ricerca, filtri, ordinamento | Si ritrova qualsiasi articolo |
 | **4. Lettura e lavoro** | Lettore integrato, note, stato, preferiti, citazioni, Cestino | Uso quotidiano completo |
 | **5. Robustezza e rilascio** | Lock, backup, GitHub, installer Windows/macOS | Gli amici installano l'app |

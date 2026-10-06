@@ -21,6 +21,15 @@ pub enum AppError {
 
     #[error("Impostazioni non leggibili: {0}")]
     Settings(#[from] serde_json::Error),
+
+    #[error("Errore interno: {0}")]
+    Internal(String),
+}
+
+impl From<tauri::Error> for AppError {
+    fn from(error: tauri::Error) -> Self {
+        Self::Internal(error.to_string())
+    }
 }
 
 impl AppError {

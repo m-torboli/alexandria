@@ -24,8 +24,10 @@ import {
   type DropZone,
   type TreeRow,
 } from "../../lib/sectionTree";
+import { useImports } from "../../store/imports";
 import { showError } from "../../store/toast";
 import { useUi } from "../../store/ui";
+import { SECTION_DROP_ATTR } from "../import/useFileDrop";
 import { DeleteSectionDialog } from "./DeleteSectionDialog";
 import { GroupHeader } from "./GroupHeader";
 import styles from "./Sidebar.module.css";
@@ -263,6 +265,8 @@ function SectionRow({ row, onSelect, onToggle, onRename, onCreateChild, onDelete
   const data = { sectionId: section.id };
   const draggable = useDraggable({ id: `section-${section.id}`, data });
   const droppable = useDroppable({ id: `section-${section.id}`, data });
+  // PDF trascinati dal computer proprio su questa sezione.
+  const filesOver = useImports((s) => s.dragging && s.dragSectionId === section.id);
 
   const onKeyDown = (e: KeyboardEvent) => {
     if (e.key === "F2" || (e.key === "Enter" && state.selected)) onRename();
@@ -280,13 +284,14 @@ function SectionRow({ row, onSelect, onToggle, onRename, onCreateChild, onDelete
             droppable.setNodeRef(node);
           }}
           {...draggable.listeners}
+          {...{ [SECTION_DROP_ATTR]: section.id }}
           icon={<Folder size={16} />}
           label={section.name}
           count={section.articleCount}
           depth={depth}
           selected={state.selected}
           expanded={state.expanded}
-          dropZone={state.dropZone}
+          dropZone={filesOver ? "inside" : state.dropZone}
           dragging={state.dragging}
           onToggle={onToggle}
           onClick={onSelect}
