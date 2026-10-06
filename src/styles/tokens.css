@@ -1,0 +1,129 @@
+/* Alexandria · design tokens
+   Moderno minimale: carattere di sistema, bianco e grigi neutri,
+   un solo colore d'accento usato con parsimonia. */
+
+:root {
+  --font-ui: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI Variable Text", "Segoe UI",
+    system-ui, sans-serif;
+  --font-display: -apple-system, BlinkMacSystemFont, "SF Pro Display", "Segoe UI Variable Display",
+    "Segoe UI", system-ui, sans-serif;
+
+  --text-xs: 11px;
+  --text-sm: 12px;
+  --text-md: 13px;
+  --text-lg: 15px;
+  --text-xl: 20px;
+  --text-2xl: 26px;
+
+  --radius-sm: 5px;
+  --radius-md: 7px;
+  --radius-lg: 12px;
+
+  --sidebar-width: 248px;
+  --detail-width: 340px;
+  --titlebar-height: 12px;
+  --row-height: 28px;
+
+  --ease: cubic-bezier(0.2, 0, 0, 1);
+  --duration: 140ms;
+
+  /* Tema chiaro */
+  --bg: #ffffff;
+  --bg-sidebar: #f5f5f7;
+  --bg-elevated: #ffffff;
+  --bg-hover: rgba(0, 0, 0, 0.045);
+  --bg-selected: rgba(0, 0, 0, 0.075);
+  --bg-input: rgba(0, 0, 0, 0.045);
+  --text: #1d1d1f;
+  --text-secondary: #6e6e73;
+  --text-tertiary: #a1a1a6;
+  --border: rgba(0, 0, 0, 0.08);
+  --border-strong: rgba(0, 0, 0, 0.14);
+  --accent: #0071e3;
+  --accent-hover: #0077ed;
+  --accent-soft: rgba(0, 113, 227, 0.12);
+  --on-accent: #ffffff;
+  --danger: #d70015;
+  --danger-hover: #e3001a;
+  --shadow-popover: 0 0 0 0.5px rgba(0, 0, 0, 0.12), 0 8px 28px rgba(0, 0, 0, 0.14);
+  --shadow-dialog: 0 0 0 0.5px rgba(0, 0, 0, 0.1), 0 24px 64px rgba(0, 0, 0, 0.22);
+  --overlay: rgba(0, 0, 0, 0.18);
+
+  --tag-red: #ff3b30;
+  --tag-orange: #ff9500;
+  --tag-yellow: #ffcc00;
+  --tag-green: #34c759;
+  --tag-teal: #30b0c7;
+  --tag-blue: #007aff;
+  --tag-purple: #af52de;
+  --tag-gray: #8e8e93;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #1e1e1e;
+    --bg-sidebar: #262626;
+    --bg-elevated: #2c2c2e;
+    --bg-hover: rgba(255, 255, 255, 0.06);
+    --bg-selected: rgba(255, 255, 255, 0.1);
+    --bg-input: rgba(255, 255, 255, 0.07);
+    --text: #f5f5f7;
+    --text-secondary: #a1a1a6;
+    --text-tertiary: #6e6e73;
+    --border: rgba(255, 255, 255, 0.08);
+    --border-strong: rgba(255, 255, 255, 0.16);
+    --accent: #0a84ff;
+    --accent-hover: #409cff;
+    --accent-soft: rgba(10, 132, 255, 0.2);
+    --danger: #ff453a;
+    --danger-hover: #ff6961;
+    --shadow-popover: 0 0 0 0.5px rgba(255, 255, 255, 0.12), 0 8px 28px rgba(0, 0, 0, 0.5);
+    --shadow-dialog: 0 0 0 0.5px rgba(255, 255, 255, 0.1), 0 24px 64px rgba(0, 0, 0, 0.6);
+    --overlay: rgba(0, 0, 0, 0.4);
+
+    --tag-red: #ff453a;
+    --tag-orange: #ff9f0a;
+    --tag-yellow: #ffd60a;
+    --tag-green: #30d158;
+    --tag-teal: #40c8e0;
+    --tag-blue: #0a84ff;
+    --tag-purple: #bf5af2;
+    --tag-gray: #98989d;
+  }
+}
+
+:root[data-theme="dark"] {
+  --bg: #1e1e1e;
+  --bg-sidebar: #262626;
+  --bg-elevated: #2c2c2e;
+  --bg-hover: rgba(255, 255, 255, 0.06);
+  --bg-selected: rgba(255, 255, 255, 0.1);
+  --bg-input: rgba(255, 255, 255, 0.07);
+  --text: #f5f5f7;
+  --text-secondary: #a1a1a6;
+  --text-tertiary: #6e6e73;
+  --border: rgba(255, 255, 255, 0.08);
+  --border-strong: rgba(255, 255, 255, 0.16);
+  --accent: #0a84ff;
+  --accent-hover: #409cff;
+  --accent-soft: rgba(10, 132, 255, 0.2);
+  --danger: #ff453a;
+  --danger-hover: #ff6961;
+  --shadow-popover: 0 0 0 0.5px rgba(255, 255, 255, 0.12), 0 8px 28px rgba(0, 0, 0, 0.5);
+  --shadow-dialog: 0 0 0 0.5px rgba(255, 255, 255, 0.1), 0 24px 64px rgba(0, 0, 0, 0.6);
+  --overlay: rgba(0, 0, 0, 0.4);
+
+  --tag-red: #ff453a;
+  --tag-orange: #ff9f0a;
+  --tag-yellow: #ffd60a;
+  --tag-green: #30d158;
+  --tag-teal: #40c8e0;
+  --tag-blue: #0a84ff;
+  --tag-purple: #bf5af2;
+  --tag-gray: #98989d;
+}
+
+/* Su macOS i semafori della finestra si sovrappongono alla barra laterale. */
+:root[data-platform="mac"] {
+  --titlebar-height: 52px;
+}

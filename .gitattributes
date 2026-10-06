@@ -1,0 +1,5 @@
+# Fine riga uniformi (LF) su Windows e macOS.
+* text=auto eol=lf
+*.png binary
+*.ico binary
+*.icns binary

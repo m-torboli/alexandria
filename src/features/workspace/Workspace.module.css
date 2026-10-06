@@ -1,0 +1,5 @@
+.workspace {
+  display: grid;
+  grid-template-columns: var(--sidebar-width) minmax(0, 1fr) var(--detail-width);
+  height: 100%;
+}
