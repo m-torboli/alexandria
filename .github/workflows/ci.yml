@@ -1,0 +1,42 @@
+# Controlli automatici a ogni modifica: tipi, test dell'interfaccia e del motore.
+
+name: Controlli
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  test:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: lts/*
+          cache: npm
+
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          components: clippy
+
+      - uses: swatinem/rust-cache@v2
+        with:
+          workspaces: "./src-tauri -> target"
+
+      - run: npm ci
+      - run: npm run check
+      - run: npm test
+
+      # Il motore incorpora l'interfaccia compilata: serve la cartella dist.
+      - run: npm run build
+
+      - name: Test del motore
+        working-directory: src-tauri
+        run: cargo test
+
+      - name: Analisi del codice
+        working-directory: src-tauri
+        run: cargo clippy --all-targets -- -D warnings

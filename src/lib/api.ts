@@ -14,11 +14,19 @@ export interface LibraryLocation {
   exists: boolean;
 }
 
+export type StartupIssue =
+  | { kind: "error"; path: string; message: string }
+  | { kind: "inUse"; path: string; device: string; minutesAgo: number };
+
 export interface AppStatus {
   library: LibraryInfo | null;
-  startupError: string | null;
+  startupIssue: StartupIssue | null;
   defaultLocation: LibraryLocation;
 }
+
+export type OpenOutcome =
+  | { status: "opened"; library: LibraryInfo }
+  | { status: "inUse"; device: string; minutesAgo: number };
 
 export interface ViewCounts {
   all: number;
@@ -164,7 +172,7 @@ async function call<T>(command: string, args?: Record<string, unknown>): Promise
 export const api = {
   appStatus: () => call<AppStatus>("app_status"),
   resolveLibraryLocation: (path: string) => call<LibraryLocation>("resolve_library_location", { path }),
-  openLibrary: (path: string) => call<LibraryInfo>("open_library", { path }),
+  openLibrary: (path: string, force = false) => call<OpenOutcome>("open_library", { path, force }),
   viewCounts: () => call<ViewCounts>("view_counts"),
 
   listSections: () => call<Section[]>("list_sections"),

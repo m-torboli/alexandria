@@ -6,7 +6,7 @@ use std::{
 use rusqlite::Connection;
 use serde::Serialize;
 
-use crate::{db, error::AppResult, importer, search};
+use crate::{backup, db, error::AppResult, importer, search};
 
 pub const DB_FILE: &str = "alexandria.db";
 pub const PDF_DIR: &str = "pdf";
@@ -42,6 +42,8 @@ impl Library {
         importer::clean_staging(&root.join(PDF_DIR));
         let conn = db::open(&root.join(DB_FILE))?;
         search::ensure_index(&conn)?;
+        // Un backup non riuscito (disco pieno, permessi) non deve impedire di lavorare.
+        let _ = backup::daily(&conn, &root.join(BACKUP_DIR));
         Ok(Self {
             root: root.to_path_buf(),
             conn,

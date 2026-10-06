@@ -6,7 +6,7 @@ use tauri::State;
 use crate::{
     error::AppResult,
     library::{self, LibraryInfo, LibraryLocation},
-    state::AppState,
+    state::{AppState, OpenOutcome, StartupIssue},
     views::{self, ViewCounts},
 };
 
@@ -14,7 +14,7 @@ use crate::{
 #[serde(rename_all = "camelCase")]
 pub struct AppStatus {
     library: Option<LibraryInfo>,
-    startup_error: Option<String>,
+    startup_issue: Option<StartupIssue>,
     default_location: LibraryLocation,
 }
 
@@ -22,7 +22,7 @@ pub struct AppStatus {
 pub fn app_status(state: State<AppState>) -> AppResult<AppStatus> {
     Ok(AppStatus {
         library: state.library_info(),
-        startup_error: state.startup_error.lock().map(|mut e| e.take()).unwrap_or(None),
+        startup_issue: state.take_startup_issue(),
         default_location: library::resolve_location(&state.default_root)?,
     })
 }
@@ -33,8 +33,8 @@ pub fn resolve_library_location(path: PathBuf) -> AppResult<LibraryLocation> {
 }
 
 #[tauri::command]
-pub fn open_library(state: State<AppState>, path: PathBuf) -> AppResult<LibraryInfo> {
-    state.open_library(&path)
+pub fn open_library(state: State<AppState>, path: PathBuf, force: Option<bool>) -> AppResult<OpenOutcome> {
+    state.open_library(&path, force.unwrap_or(false))
 }
 
 #[tauri::command]

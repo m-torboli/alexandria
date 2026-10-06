@@ -98,6 +98,14 @@
   line-height: 1.5;
 }
 
+.actions {
+  margin-top: 28px;
+}
+
+.hint + .actions {
+  margin-top: 0;
+}
+
 .cta {
   min-width: 180px;
 }

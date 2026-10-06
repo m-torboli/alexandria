@@ -8,9 +8,8 @@ import {
   DropdownSeparator,
   DropdownTrigger,
 } from "../../components/Menu";
-import { api } from "../../lib/api";
 import { exportView } from "../../lib/export";
-import { pickLibraryLocation } from "../../lib/library";
+import { openLibrary, pickLibraryLocation } from "../../lib/library";
 import { resetAllData, useAppStatus } from "../../lib/queries";
 import { showError, useToasts } from "../../store/toast";
 import { useUi } from "../../store/ui";
@@ -25,7 +24,8 @@ export function LibraryFooter() {
     try {
       const location = await pickLibraryLocation("Apri o crea una libreria");
       if (!location || location.path === library.path) return;
-      const opened = await api.openLibrary(location.path);
+      const opened = await openLibrary(location.path);
+      if (!opened) return;
       setView({ kind: "all" });
       await resetAllData();
       useToasts

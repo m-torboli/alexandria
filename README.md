@@ -20,6 +20,23 @@ cd src-tauri && cargo test -- --ignored   # test che richiedono internet (doi.or
 npm run tauri build  # crea l'installer per il sistema corrente
 ```
 
+## Rilasciare una nuova versione
+
+1. Aggiorna il numero di versione in `package.json`, `src-tauri/Cargo.toml` e
+   `src-tauri/tauri.conf.json`.
+2. Salva le modifiche e pubblica un tag:
+   ```bash
+   git tag v1.0.0
+   git push origin v1.0.0
+   ```
+3. GitHub Actions (`.github/workflows/release.yml`) crea gli installer per
+   Windows (`.exe`) e macOS (`.dmg` universale) e li allega a una **bozza** di
+   release: controllala e pubblicala dalla pagina "Releases" del repository.
+
+Gli installer non sono firmati: le istruzioni per chi installa sono in
+[INSTALLAZIONE.md](INSTALLAZIONE.md). A ogni modifica su `main` il workflow
+`ci.yml` esegue controlli dei tipi, test e analisi del codice.
+
 ## Struttura
 
 ```
@@ -39,6 +56,8 @@ src-tauri/src/           motore (Rust)
   query.rs               elenco articoli: vista, ricerca, filtri, ordinamento
   files.rs               nomi leggibili, impronta SHA-256
   sections.rs, tags.rs   sezioni e tag
+  lock.rs                segnale "libreria in uso" su un altro computer
+  backup.rs              copia giornaliera del database (ultime 7)
   commands/              comandi esposti all'interfaccia
 ```
 
