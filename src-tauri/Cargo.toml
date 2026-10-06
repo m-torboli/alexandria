@@ -1,6 +1,6 @@
 [package]
 name = "alexandria"
-version = "1.1.0"
+version = "1.1.1"
 description = "Alexandria — la tua biblioteca di articoli scientifici"
 authors = ["Marco Torboli"]
 edition = "2021"

@@ -64,9 +64,11 @@ pub fn fetch(doi: &str) -> AppResult<Metadata> {
         Err(ureq::Error::StatusCode(code)) => Err(AppError::invalid(format!(
             "doi.org ha risposto con un errore ({code}). Riprova più tardi."
         ))),
-        Err(_) => Err(AppError::invalid(
-            "Impossibile contattare doi.org. Controlla la connessione a internet.",
-        )),
+        // Il dettaglio tecnico (certificato rifiutato, proxy, timeout…) serve a capire
+        // il problema: senza, ogni guasto di rete sembrerebbe uguale.
+        Err(e) => Err(AppError::invalid(format!(
+            "Impossibile contattare doi.org ({e}). Controlla la connessione a internet."
+        ))),
     }
 }
 

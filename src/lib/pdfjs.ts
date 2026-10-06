@@ -3,6 +3,9 @@
 // Questo modulo va importato prima del visualizzatore (pdf_viewer.mjs), che si
 // appoggia alla libreria registrata globalmente da pdf.mjs.
 
+// Prima di PDF.js: senza, su macOS non si legge il testo delle pagine (vedi il modulo).
+import "./streamPolyfill";
+
 import { getDocument, GlobalWorkerOptions } from "pdfjs-dist/legacy/build/pdf.mjs";
 import workerUrl from "pdfjs-dist/legacy/build/pdf.worker.min.mjs?url";
 
