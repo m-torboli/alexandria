@@ -1,10 +1,15 @@
 import clsx from "clsx";
 import {
+  BookOpenText,
+  Braces,
+  Copy,
+  Download,
   ExternalLink,
   FolderOpen,
   LoaderCircle,
   MoreHorizontal,
   Plus,
+  Quote,
   RefreshCw,
   RotateCcw,
   Star,
@@ -25,6 +30,8 @@ import {
 } from "../../components/Menu";
 import { api, metadataOf, type Article, type Author, type Metadata, type ReadingStatus } from "../../lib/api";
 import { formatAuthors, parseAuthors } from "../../lib/authors";
+import { citationKey } from "../../lib/citation";
+import { copyApa, copyBibtex, exportBibtex } from "../../lib/export";
 import { formatBytes, formatDate } from "../../lib/format";
 import { ARTICLE_DEPENDENT, useAction, useArticle, useSections, useTags } from "../../lib/queries";
 import { visibleRows } from "../../lib/sectionTree";
@@ -63,6 +70,7 @@ function ArticleDetail({ article }: { article: Article }) {
   const actions = useArticleActions();
   const selectArticle = useUi((s) => s.selectArticle);
   const update = useAction(api.updateArticleMetadata, ARTICLE_DEPENDENT);
+  const saveNotes = useAction(api.setArticleNotes, ARTICLE_DEPENDENT);
   const lookup = useAction(api.lookupDoi, ARTICLE_DEPENDENT);
   const [lookingUp, setLookingUp] = useState(false);
   const trashed = article.deletedAt !== null;
@@ -105,12 +113,31 @@ function ArticleDetail({ article }: { article: Article }) {
             >
               <Star size={16} fill={article.favorite ? "currentColor" : "none"} />
             </IconButton>
-            <IconButton label="Mostra nella cartella" onClick={() => actions.reveal(article.id)}>
-              <FolderOpen size={16} />
-            </IconButton>
-            <Button onClick={() => actions.open(article.id)}>
-              <ExternalLink size={14} />
-              Apri PDF
+            <DropdownRoot>
+              <DropdownTrigger asChild>
+                <IconButton label="Cita">
+                  <Quote size={15} />
+                </IconButton>
+              </DropdownTrigger>
+              <DropdownContent align="end">
+                <DropdownItem icon={<Copy size={14} />} onSelect={() => copyApa(metadataOf(article))}>
+                  Copia citazione APA
+                </DropdownItem>
+                <DropdownItem icon={<Braces size={14} />} onSelect={() => copyBibtex(metadataOf(article))}>
+                  Copia voce BibTeX
+                </DropdownItem>
+                <DropdownSeparator />
+                <DropdownItem
+                  icon={<Download size={14} />}
+                  onSelect={() => exportBibtex([metadataOf(article)], citationKey(metadataOf(article)))}
+                >
+                  Esporta in BibTeX…
+                </DropdownItem>
+              </DropdownContent>
+            </DropdownRoot>
+            <Button variant="primary" onClick={() => actions.read(article.id)}>
+              <BookOpenText size={14} />
+              Leggi
             </Button>
           </>
         )}
@@ -131,24 +158,32 @@ function ArticleDetail({ article }: { article: Article }) {
                   icon={<Trash2 size={14} />}
                   destructive
                   onSelect={async () => {
-                    await actions.deleteForever(article.id);
-                    selectArticle(null);
+                    if (await actions.deleteForever(article.id)) selectArticle(null);
                   }}
                 >
                   Elimina definitivamente
                 </DropdownItem>
               </>
             ) : (
-              <DropdownItem
-                icon={<Trash2 size={14} />}
-                destructive
-                onSelect={() => {
-                  actions.trash(article.id);
-                  selectArticle(null);
-                }}
-              >
-                Sposta nel Cestino
-              </DropdownItem>
+              <>
+                <DropdownItem icon={<ExternalLink size={14} />} onSelect={() => actions.openExternal(article.id)}>
+                  Apri con l'app di sistema
+                </DropdownItem>
+                <DropdownItem icon={<FolderOpen size={14} />} onSelect={() => actions.reveal(article.id)}>
+                  Mostra nella cartella
+                </DropdownItem>
+                <DropdownSeparator />
+                <DropdownItem
+                  icon={<Trash2 size={14} />}
+                  destructive
+                  onSelect={() => {
+                    actions.trash(article.id);
+                    selectArticle(null);
+                  }}
+                >
+                  Sposta nel Cestino
+                </DropdownItem>
+              </>
             )}
           </DropdownContent>
         </DropdownRoot>
@@ -246,6 +281,18 @@ function ArticleDetail({ article }: { article: Article }) {
         </dl>
 
         <Organizer article={article} />
+
+        <section className={styles.block}>
+          <h2 className={styles.blockTitle}>Note</h2>
+          <EditableText
+            multiline
+            aria-label="Note"
+            className={styles.abstract}
+            value={article.notes}
+            placeholder="Aggiungi le tue note…"
+            onCommit={(notes) => saveNotes(article.id, notes)}
+          />
+        </section>
 
         <section className={styles.block}>
           <h2 className={styles.blockTitle}>Abstract</h2>

@@ -350,6 +350,12 @@ pub fn set_favorite(conn: &Connection, id: i64, favorite: bool) -> AppResult<()>
     update_one(conn, id, "favorite = ?2", favorite)
 }
 
+/// Note personali: si salvano spesso (mentre si scrive), restano cercabili.
+pub fn set_notes(conn: &Connection, id: i64, notes: &str) -> AppResult<()> {
+    update_one(conn, id, "notes = ?2", notes)?;
+    search::reindex(conn, id)
+}
+
 fn update_one(conn: &Connection, id: i64, assignment: &str, value: impl rusqlite::ToSql) -> AppResult<()> {
     let sql = format!("UPDATE articles SET {assignment}, modified_at = {NOW} WHERE id = ?1");
     if conn.execute(&sql, params![id, value])? == 0 {
@@ -549,6 +555,20 @@ mod tests {
         update_metadata(&mut lib, id, sample()).unwrap();
         let article = save_pdf_info(&mut lib, id, "testo", Some(3), Some("Altro titolo")).unwrap();
         assert_eq!(article.metadata.title, "Deep learning in cardiology");
+    }
+
+    #[test]
+    fn notes_are_saved_and_searchable() {
+        let (_dir, lib) = library();
+        let id = insert(&lib, "a.pdf");
+        search::reindex(&lib.conn, id).unwrap();
+        set_notes(&lib.conn, id, "Metodo interessante: campione randomizzato").unwrap();
+        assert_eq!(get(&lib.conn, id).unwrap().notes, "Metodo interessante: campione randomizzato");
+        let found: i64 = lib
+            .conn
+            .query_row("SELECT rowid FROM articles_fts WHERE articles_fts MATCH 'randomizzato'", [], |r| r.get(0))
+            .unwrap();
+        assert_eq!(found, id);
     }
 
     #[test]

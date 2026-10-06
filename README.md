@@ -54,6 +54,16 @@ src-tauri/src/           motore (Rust)
 Ogni passo dopo la copia è facoltativo: se fallisce, l'articolo resta in libreria
 nella vista "Da completare".
 
+## Lettura e citazioni
+
+Il lettore integrato usa il visualizzatore di PDF.js (`src/features/reader`), con
+note affiancate salvate automaticamente e la citazione dei passi selezionati con il
+numero di pagina. Le risorse di PDF.js (font, mappe dei caratteri, decodificatori
+WebAssembly) vengono copiate in `public/pdfjs` da `scripts/copy-pdfjs-assets.mjs`
+prima di `npm run dev` e `npm run build`.
+
+Le citazioni APA 7 e le voci BibTeX sono generate in `src/lib/citation.ts`.
+
 ## Ricerca
 
 L'indice FTS5 contiene titolo, autori, rivista, anno, abstract, note e testo del PDF,

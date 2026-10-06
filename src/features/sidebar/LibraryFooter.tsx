@@ -1,5 +1,5 @@
 import { revealItemInDir } from "@tauri-apps/plugin-opener";
-import { ChevronsUpDown, FolderOpen, Library, Repeat } from "lucide-react";
+import { ChevronsUpDown, Download, FolderOpen, Library, Repeat } from "lucide-react";
 
 import {
   DropdownContent,
@@ -9,6 +9,7 @@ import {
   DropdownTrigger,
 } from "../../components/Menu";
 import { api } from "../../lib/api";
+import { exportView } from "../../lib/export";
 import { pickLibraryLocation } from "../../lib/library";
 import { resetAllData, useAppStatus } from "../../lib/queries";
 import { showError, useToasts } from "../../store/toast";
@@ -50,6 +51,9 @@ export function LibraryFooter() {
           onSelect={() => revealItemInDir(library.path).catch(showError)}
         >
           Mostra nella cartella
+        </DropdownItem>
+        <DropdownItem icon={<Download size={14} />} onSelect={() => exportView({ kind: "all" }, library.name)}>
+          Esporta la libreria in BibTeX…
         </DropdownItem>
         <DropdownSeparator />
         <DropdownItem icon={<Repeat size={14} />} onSelect={switchLibrary}>

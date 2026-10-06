@@ -9,12 +9,13 @@ import {
   useSensors,
   type DragMoveEvent,
 } from "@dnd-kit/core";
-import { Folder, FolderPlus, Pencil, Trash2 } from "lucide-react";
+import { Download, Folder, FolderPlus, Pencil, Trash2 } from "lucide-react";
 import { useEffect, useState, type CSSProperties, type KeyboardEvent, type ReactNode } from "react";
 
 import { ContextContent, ContextItem, ContextRoot, ContextSeparator, ContextTrigger } from "../../components/Menu";
 import { InlineEdit } from "../../components/InlineEdit";
 import { api, type Section, type SectionDeletePreview } from "../../lib/api";
+import { exportView } from "../../lib/export";
 import { keys, useAction, useSections } from "../../lib/queries";
 import {
   dropZoneAt,
@@ -305,6 +306,13 @@ function SectionRow({ row, onSelect, onToggle, onRename, onCreateChild, onDelete
         </ContextItem>
         <ContextItem icon={<Pencil size={14} />} onSelect={onRename}>
           Rinomina
+        </ContextItem>
+        <ContextSeparator />
+        <ContextItem
+          icon={<Download size={14} />}
+          onSelect={() => exportView({ kind: "section", id: section.id }, section.name)}
+        >
+          Esporta in BibTeX…
         </ContextItem>
         <ContextSeparator />
         <ContextItem icon={<Trash2 size={14} />} destructive onSelect={onDelete}>

@@ -37,7 +37,7 @@ export function ArticleList({ articles, inTrash, terms }: ArticleListProps) {
     };
     if (e.key === "ArrowDown") move(index + 1);
     else if (e.key === "ArrowUp") move(index === -1 ? 0 : index - 1);
-    else if (selectedId !== null && e.key === "Enter" && !inTrash) actions.open(selectedId);
+    else if (selectedId !== null && e.key === "Enter" && !inTrash) actions.read(selectedId);
     else if (selectedId !== null && (e.key === "Delete" || e.key === "Backspace") && !inTrash) {
       const next = articles[index + 1] ?? articles[index - 1];
       actions.trash(selectedId);
@@ -55,7 +55,7 @@ export function ArticleList({ articles, inTrash, terms }: ArticleListProps) {
               terms={terms}
               selected={article.id === selectedId}
               onSelect={() => select(article.id)}
-              onOpen={() => !inTrash && actions.open(article.id)}
+              onOpen={() => !inTrash && actions.read(article.id)}
             />
           </ContextTrigger>
           <ArticleMenu article={article} />

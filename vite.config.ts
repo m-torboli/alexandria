@@ -18,6 +18,11 @@ export default defineConfig({
     hmr: host ? { protocol: "ws", host, port: 1421 } : undefined,
     watch: { ignored: ["**/src-tauri/**"] },
   },
+  build: {
+    // App desktop: i file sono locali, non scaricati dalla rete. PDF.js e il
+    // lettore sono comunque in pacchetti separati, caricati solo quando servono.
+    chunkSizeWarningLimit: 700,
+  },
   test: {
     include: ["src/**/*.test.ts"],
   },

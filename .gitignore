@@ -12,6 +12,9 @@ dist
 dist-ssr
 *.local
 
+# Risorse di PDF.js copiate da node_modules (scripts/copy-pdfjs-assets.mjs)
+public/pdfjs
+
 # Editor directories and files
 .vscode/*
 !.vscode/extensions.json

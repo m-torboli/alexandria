@@ -16,8 +16,12 @@ interface UiState {
   selectedArticleId: number | null;
   /** Sezioni espanse nell'albero, per id. */
   expanded: Record<number, boolean>;
+  /** Articolo aperto nel lettore integrato. */
+  readingId: number | null;
   setView: (view: View) => void;
   selectArticle: (id: number | null) => void;
+  openReader: (id: number) => void;
+  closeReader: () => void;
   setExpanded: (id: number, expanded: boolean) => void;
 }
 
@@ -33,8 +37,11 @@ export const useUi = create<UiState>()(
       view: { kind: "all" },
       selectedArticleId: null,
       expanded: {},
+      readingId: null,
       setView: (view) => set((s) => (sameView(s.view, view) ? s : { view, selectedArticleId: null })),
       selectArticle: (selectedArticleId) => set({ selectedArticleId }),
+      openReader: (id) => set({ readingId: id, selectedArticleId: id }),
+      closeReader: () => set({ readingId: null }),
       setExpanded: (id, expanded) => set((s) => ({ expanded: { ...s.expanded, [id]: expanded } })),
     }),
     {

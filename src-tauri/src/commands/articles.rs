@@ -20,6 +20,28 @@ pub fn list_articles(state: State<AppState>, view: View, query: Option<Query>) -
     state.with_library(|lib| query::list(&lib.conn, view, &query.unwrap_or_default()))
 }
 
+/// Articoli completi di una vista, per l'esportazione delle citazioni.
+#[tauri::command]
+pub fn export_articles(state: State<AppState>, view: View) -> AppResult<Vec<Article>> {
+    state.with_library(|lib| {
+        query::list(&lib.conn, view, &Query { sort: query::Sort::Author, ..Default::default() })?
+            .into_iter()
+            .map(|summary| articles::get(&lib.conn, summary.id))
+            .collect()
+    })
+}
+
+/// Scrive un file di testo scelto dall'utente con la finestra "Salva".
+/// Solo bibliografie (.bib): l'interfaccia non può scrivere altri tipi di file.
+#[tauri::command]
+pub async fn save_bibliography(path: PathBuf, contents: String) -> AppResult<()> {
+    let is_bib = path.extension().is_some_and(|ext| ext.eq_ignore_ascii_case("bib"));
+    if !is_bib {
+        return Err(AppError::invalid("Il file deve avere estensione .bib."));
+    }
+    blocking(move || Ok(fs::write(path, contents)?)).await
+}
+
 #[tauri::command]
 pub fn filter_options(state: State<AppState>) -> AppResult<FilterOptions> {
     state.with_library(|lib| query::filter_options(&lib.conn))
@@ -85,6 +107,11 @@ pub fn set_reading_status(state: State<AppState>, id: i64, status: i64) -> AppRe
 #[tauri::command]
 pub fn set_favorite(state: State<AppState>, id: i64, favorite: bool) -> AppResult<()> {
     state.with_library(|lib| articles::set_favorite(&lib.conn, id, favorite))
+}
+
+#[tauri::command]
+pub fn set_article_notes(state: State<AppState>, id: i64, notes: String) -> AppResult<()> {
+    state.with_library(|lib| articles::set_notes(&lib.conn, id, &notes))
 }
 
 #[tauri::command]

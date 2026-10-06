@@ -2,3 +2,7 @@
 declare module "pdfjs-dist/legacy/build/pdf.mjs" {
   export * from "pdfjs-dist";
 }
+
+declare module "pdfjs-dist/legacy/web/pdf_viewer.mjs" {
+  export * from "pdfjs-dist/web/pdf_viewer.mjs";
+}

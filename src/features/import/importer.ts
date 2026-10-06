@@ -7,7 +7,6 @@ import { open } from "@tauri-apps/plugin-dialog";
 
 import { api } from "../../lib/api";
 import { findDoi, plausibleTitle } from "../../lib/doi";
-import { readPdf } from "../../lib/pdf";
 import { refreshArticles } from "../../lib/queries";
 import { useImports } from "../../store/imports";
 import { useToasts } from "../../store/toast";
@@ -79,6 +78,8 @@ async function importOne(job: number, path: string, sectionId: number | null) {
 /** Estrae testo e titolo dal PDF; restituisce il DOI se lo trova. */
 async function extractText(articleId: number): Promise<string | null> {
   try {
+    // PDF.js è pesante: si carica alla prima importazione, non all'avvio.
+    const { readPdf } = await import("../../lib/pdf");
     const pdf = await readPdf(await api.readArticlePdf(articleId));
     const doi = findDoi([pdf.metadataText, ...pdf.pages.slice(0, 2)]);
     await api.savePdfInfo(articleId, pdf.pages.join("\n\n"), pdf.pageCount, plausibleTitle(pdf.title));

@@ -1,10 +1,23 @@
-import { BookCheck, BookOpen, ExternalLink, FolderOpen, RotateCcw, Star, StarOff, Trash2 } from "lucide-react";
+import {
+  BookCheck,
+  BookOpen,
+  BookOpenText,
+  ExternalLink,
+  FolderOpen,
+  Quote,
+  RotateCcw,
+  Star,
+  StarOff,
+  Trash2,
+} from "lucide-react";
 
 import { ContextContent, ContextItem, ContextSeparator } from "../../components/Menu";
-import { api, type ArticleSummary, type ReadingStatus } from "../../lib/api";
+import { api, metadataOf, type ArticleSummary, type ReadingStatus } from "../../lib/api";
+import { copyApa } from "../../lib/export";
 import { ARTICLE_DEPENDENT, useAction } from "../../lib/queries";
 import { confirm } from "../../store/confirm";
 import { showError } from "../../store/toast";
+import { useUi } from "../../store/ui";
 
 /** Azioni sugli articoli, condivise da elenco, menu e pannello di dettaglio. */
 export function useArticleActions() {
@@ -15,8 +28,18 @@ export function useArticleActions() {
   const deleteMany = useAction(api.deleteArticlesForever, ARTICLE_DEPENDENT);
 
   return {
-    open: (id: number) => api.openArticlePdf(id).catch(showError),
+    /** Apre il lettore integrato. */
+    read: (id: number) => useUi.getState().openReader(id),
+    /** Apre il PDF con l'applicazione predefinita del sistema. */
+    openExternal: (id: number) => api.openArticlePdf(id).catch(showError),
     reveal: (id: number) => api.revealArticlePdf(id).catch(showError),
+    copyApa: async (id: number) => {
+      try {
+        await copyApa(metadataOf(await api.getArticle(id)));
+      } catch (error) {
+        showError(error);
+      }
+    },
     setStatus: (id: number, status: ReadingStatus) => setStatus(id, status),
     setFavorite: (id: number, favorite: boolean) => setFavorite(id, favorite),
     trash: (id: number) => trashMany([id]),
@@ -29,6 +52,7 @@ export function useArticleActions() {
         destructive: true,
       });
       if (ok) await deleteMany([id]);
+      return ok;
     },
   };
 }
@@ -53,11 +77,18 @@ export function ArticleMenu({ article }: { article: ArticleSummary }) {
 
   return (
     <ContextContent>
-      <ContextItem icon={<ExternalLink size={14} />} onSelect={() => actions.open(id)}>
-        Apri PDF
+      <ContextItem icon={<BookOpenText size={14} />} onSelect={() => actions.read(id)}>
+        Leggi
+      </ContextItem>
+      <ContextItem icon={<ExternalLink size={14} />} onSelect={() => actions.openExternal(id)}>
+        Apri con l'app di sistema
       </ContextItem>
       <ContextItem icon={<FolderOpen size={14} />} onSelect={() => actions.reveal(id)}>
         Mostra nella cartella
+      </ContextItem>
+      <ContextSeparator />
+      <ContextItem icon={<Quote size={14} />} onSelect={() => actions.copyApa(id)}>
+        Copia citazione APA
       </ContextItem>
       <ContextSeparator />
       {article.readingStatus === 2 ? (

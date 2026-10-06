@@ -1,4 +1,4 @@
-import { Palette, Pencil, Trash2 } from "lucide-react";
+import { Download, Palette, Pencil, Trash2 } from "lucide-react";
 import { useState, type CSSProperties } from "react";
 
 import { ConfirmDialog } from "../../components/ConfirmDialog";
@@ -13,6 +13,7 @@ import {
   ContextTrigger,
 } from "../../components/Menu";
 import { api, TAG_COLORS, type Tag, type TagColor } from "../../lib/api";
+import { exportView } from "../../lib/export";
 import { plural } from "../../lib/format";
 import { keys, useAction, useTags } from "../../lib/queries";
 import { useUi } from "../../store/ui";
@@ -109,6 +110,13 @@ export function TagList() {
                     </ContextCheckItem>
                   ))}
                 </ContextSub>
+                <ContextSeparator />
+                <ContextItem
+                  icon={<Download size={14} />}
+                  onSelect={() => exportView({ kind: "tag", id: tag.id }, tag.name)}
+                >
+                  Esporta in BibTeX…
+                </ContextItem>
                 <ContextSeparator />
                 <ContextItem
                   icon={<Trash2 size={14} />}

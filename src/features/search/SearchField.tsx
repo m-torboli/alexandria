@@ -2,6 +2,7 @@ import { Search, X } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 
 import { useSearch } from "../../store/search";
+import { useUi } from "../../store/ui";
 import styles from "./Search.module.css";
 
 const DEBOUNCE_MS = 140;
@@ -29,6 +30,8 @@ export function SearchField() {
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
       const modifier = isMac ? e.metaKey : e.ctrlKey;
+      // Con il lettore aperto le stesse scorciatoie cercano nel documento.
+      if (useUi.getState().readingId !== null) return;
       if (modifier && (e.key === "k" || e.key === "f")) {
         e.preventDefault();
         ref.current?.focus();
