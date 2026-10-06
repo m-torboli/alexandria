@@ -1,14 +1,4 @@
-import {
-  DndContext,
-  DragOverlay,
-  PointerSensor,
-  pointerWithin,
-  useDraggable,
-  useDroppable,
-  useSensor,
-  useSensors,
-  type DragMoveEvent,
-} from "@dnd-kit/core";
+import { useDndMonitor, useDraggable, useDroppable, type DragMoveEvent } from "@dnd-kit/core";
 import { Download, Folder, FolderPlus, Pencil, Trash2 } from "lucide-react";
 import { useEffect, useState, type CSSProperties, type KeyboardEvent, type ReactNode } from "react";
 
@@ -16,7 +6,8 @@ import { ContextContent, ContextItem, ContextRoot, ContextSeparator, ContextTrig
 import { InlineEdit } from "../../components/InlineEdit";
 import { api, type Section, type SectionDeletePreview } from "../../lib/api";
 import { exportView } from "../../lib/export";
-import { keys, useAction, useSections } from "../../lib/queries";
+import { plural } from "../../lib/format";
+import { ARTICLE_DEPENDENT, keys, useAction, useSections } from "../../lib/queries";
 import {
   dropZoneAt,
   resolveDrop,
@@ -25,8 +16,9 @@ import {
   type DropZone,
   type TreeRow,
 } from "../../lib/sectionTree";
+import { dragItem, useDragMode, type DragItem } from "../../store/drag";
 import { useImports } from "../../store/imports";
-import { showError } from "../../store/toast";
+import { showError, useToasts } from "../../store/toast";
 import { useUi } from "../../store/ui";
 import { SECTION_DROP_ATTR } from "../import/useFileDrop";
 import { DeleteSectionDialog } from "./DeleteSectionDialog";
@@ -43,8 +35,13 @@ interface Hover {
   zone: DropZone;
 }
 
-function hoverFrom({ over, activatorEvent, delta }: Pick<DragMoveEvent, "over" | "activatorEvent" | "delta">): Hover | null {
+function hoverFrom({ active, over, activatorEvent, delta }: DragMoveEvent): Hover | null {
   if (!over) return null;
+  const item = dragItem(active.data.current);
+  // Gli articoli si rilasciano dentro una sezione, non tra una sezione e l'altra.
+  if (item?.type === "article") {
+    return over.id === ROOT_DROP_ID ? null : { id: over.data.current?.sectionId as number, zone: "inside" };
+  }
   if (over.id === ROOT_DROP_ID) return { id: null, zone: "inside" };
   const pointerY = (activatorEvent as PointerEvent).clientY + delta.y;
   return { id: over.data.current?.sectionId as number, zone: dropZoneAt(pointerY, over.rect.top, over.rect.height) };
@@ -61,12 +58,14 @@ export function SectionTree() {
   /** undefined = nessuna creazione in corso; null = nuova sezione di primo livello. */
   const [draftParent, setDraftParent] = useState<number | null | undefined>(undefined);
   const [deleting, setDeleting] = useState<{ section: Section; preview: SectionDeletePreview } | null>(null);
-  const [draggedId, setDraggedId] = useState<number | null>(null);
+  const [dragging, setDragging] = useState<DragItem | null>(null);
   const [hover, setHover] = useState<Hover | null>(null);
+  const draggedId = dragging?.type === "section" ? dragging.sectionId : null;
 
   const create = useAction(api.createSection, [keys.sections]);
   const rename = useAction(api.renameSection, [keys.sections]);
   const move = useAction(api.moveSection, [keys.sections]);
+  const place = useAction(api.placeArticles, ARTICLE_DEPENDENT);
   const remove = useAction(api.deleteSection, [keys.sections, keys.counts]);
 
   const rows = visibleRows(sections, (id) => !!expanded[id]);
@@ -106,31 +105,47 @@ export function SectionTree() {
 
   // ── Trascinamento ──────────────────────────────────────────────────────────
 
-  const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 5 } }));
-
   const endDrag = () => {
-    setDraggedId(null);
+    setDragging(null);
     setHover(null);
   };
 
-  const onDragMove = (event: DragMoveEvent) => {
-    const next = hoverFrom(event);
-    setHover((prev) => (prev?.id === next?.id && prev?.zone === next?.zone ? prev : next));
+  /** Articoli rilasciati su una sezione: aggiunti, o spostati se vengono da una sezione. */
+  const dropArticles = async (ids: number[], target: number) => {
+    const from = view.kind === "section" && !useDragMode.getState().copy ? view.id : null;
+    const name = sections.find((s) => s.id === target)?.name;
+    await place(ids, target, from);
+    const what = ids.length > 1 ? plural(ids.length, "articolo", "articoli") : "Articolo";
+    useToasts.getState().show(from !== null ? `${what} spostato in “${name}”.` : `${what} aggiunto a “${name}”.`);
   };
 
-  const onDragEnd = (event: DragMoveEvent) => {
-    const id = event.active.data.current?.sectionId as number;
-    const target = hoverFrom(event);
-    endDrag();
-    if (!target) return;
-    const destination = resolveDrop(sections, id, target.id, target.zone);
-    if (!destination) return;
-    if (destination.parentId !== null) setExpanded(destination.parentId, true);
-    move(id, destination.parentId, destination.index);
-  };
+  useDndMonitor({
+    onDragStart: ({ active }) => setDragging(dragItem(active.data.current)),
+    onDragMove: (event) => {
+      const next = hoverFrom(event);
+      setHover((prev) => (prev?.id === next?.id && prev?.zone === next?.zone ? prev : next));
+    },
+    onDragEnd: (event) => {
+      const item = dragItem(event.active.data.current);
+      const target = hoverFrom(event);
+      endDrag();
+      if (!item || !target || !isValidHover(item, target)) return;
+      if (item.type === "article") {
+        dropArticles(item.articleIds, target.id!);
+        return;
+      }
+      const destination = resolveDrop(sections, item.sectionId, target.id, target.zone)!;
+      if (destination.parentId !== null) setExpanded(destination.parentId, true);
+      move(item.sectionId, destination.parentId, destination.index);
+    },
+    onDragCancel: endDrag,
+  });
 
-  const isValidHover = (h: Hover | null): h is Hover =>
-    h !== null && draggedId !== null && resolveDrop(sections, draggedId, h.id, h.zone) !== null;
+  function isValidHover(item: DragItem | null, h: Hover | null): h is Hover {
+    if (!item || !h) return false;
+    if (item.type === "article") return h.id !== null && h.id !== selectedId;
+    return resolveDrop(sections, item.sectionId, h.id, h.zone) !== null;
+  }
 
   // Tenendo una sezione sopra una sezione chiusa, la si apre.
   const expandCandidate = hover?.zone === "inside" ? hover.id : null;
@@ -160,7 +175,7 @@ export function SectionTree() {
         row={row}
         selected={row.section.id === selectedId}
         expanded={row.hasChildren ? !!expanded[row.section.id] : undefined}
-        dropZone={hover?.id === row.section.id && isValidHover(hover) ? hover.zone : null}
+        dropZone={hover?.id === row.section.id && isValidHover(dragging, hover) ? hover.zone : null}
         dragging={draggedId === row.section.id}
         onSelect={() => setView({ kind: "section", id: row.section.id })}
         onToggle={() => setExpanded(row.section.id, !expanded[row.section.id])}
@@ -186,18 +201,12 @@ export function SectionTree() {
     );
   }
 
-  const dragged = sections.find((s) => s.id === draggedId);
-
   return (
-    <DndContext
-      sensors={sensors}
-      collisionDetection={pointerWithin}
-      onDragStart={({ active }) => setDraggedId(active.data.current?.sectionId as number)}
-      onDragMove={onDragMove}
-      onDragEnd={onDragEnd}
-      onDragCancel={endDrag}
-    >
-      <RootDropHeader highlighted={hover?.id === null && isValidHover(hover)} onAdd={() => startCreate(null)} />
+    <>
+      <RootDropHeader
+        highlighted={hover?.id === null && isValidHover(dragging, hover)}
+        onAdd={() => startCreate(null)}
+      />
       <div role="tree" aria-label="Sezioni" className={styles.group}>
         {items}
         {items.length === 0 && (
@@ -207,17 +216,8 @@ export function SectionTree() {
         )}
       </div>
 
-      <DragOverlay dropAnimation={null}>
-        {dragged && (
-          <div className={styles.dragOverlay}>
-            <Folder size={14} />
-            {dragged.name}
-          </div>
-        )}
-      </DragOverlay>
-
       <DeleteSectionDialog target={deleting} onClose={() => setDeleting(null)} onConfirm={performDelete} />
-    </DndContext>
+    </>
   );
 }
 
@@ -263,9 +263,11 @@ interface SectionRowProps {
 
 function SectionRow({ row, onSelect, onToggle, onRename, onCreateChild, onDelete, ...state }: SectionRowProps) {
   const { section, depth } = row;
-  const data = { sectionId: section.id };
-  const draggable = useDraggable({ id: `section-${section.id}`, data });
-  const droppable = useDroppable({ id: `section-${section.id}`, data });
+  const draggable = useDraggable({
+    id: `section-${section.id}`,
+    data: { type: "section", sectionId: section.id, label: section.name } satisfies DragItem,
+  });
+  const droppable = useDroppable({ id: `section-${section.id}`, data: { sectionId: section.id } });
   // PDF trascinati dal computer proprio su questa sezione.
   const filesOver = useImports((s) => s.dragging && s.dragSectionId === section.id);
 

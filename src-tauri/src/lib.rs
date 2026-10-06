@@ -69,6 +69,7 @@ pub fn run() {
             art::set_reading_status,
             art::set_favorite,
             art::set_article_sections,
+            art::place_articles,
             art::set_article_tags,
             art::trash_articles,
             art::restore_articles,

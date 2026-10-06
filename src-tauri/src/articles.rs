@@ -82,6 +82,8 @@ pub struct Article {
 pub enum View {
     All,
     ToRead,
+    Reading,
+    Read,
     Favorites,
     Incomplete,
     Unclassified,
@@ -372,6 +374,34 @@ pub fn set_tags(conn: &mut Connection, id: i64, tag_ids: &[i64]) -> AppResult<()
     replace_links(conn, id, "article_tags", "tag_id", tag_ids)
 }
 
+/// Mette gli articoli nella sezione `target`. Con `from` li sposta: escono
+/// dalla sezione d'origine e dalle sue sottosezioni (salvo il bersaglio stesso).
+pub fn place_in_section(conn: &mut Connection, ids: &[i64], target: i64, from: Option<i64>) -> AppResult<()> {
+    let tx = conn.transaction()?;
+    for id in ids {
+        add_to_section(&tx, *id, target).map_err(|e| match e {
+            AppError::Database(rusqlite::Error::SqliteFailure(f, _))
+                if f.code == rusqlite::ErrorCode::ConstraintViolation =>
+            {
+                AppError::NotFound
+            }
+            e => e,
+        })?;
+        if let Some(from) = from.filter(|f| *f != target) {
+            tx.execute(
+                "WITH RECURSIVE subtree(id) AS (
+                     SELECT ?2 UNION ALL SELECT s.id FROM sections s JOIN subtree ON s.parent_id = subtree.id
+                 )
+                 DELETE FROM article_sections
+                 WHERE article_id = ?1 AND section_id IN (SELECT id FROM subtree) AND section_id <> ?3",
+                params![id, from, target],
+            )?;
+        }
+    }
+    tx.commit()?;
+    Ok(())
+}
+
 pub fn add_to_section(conn: &Connection, id: i64, section_id: i64) -> AppResult<()> {
     conn.execute(
         "INSERT INTO article_sections (article_id, section_id) VALUES (?1, ?2) ON CONFLICT DO NOTHING",
@@ -569,6 +599,36 @@ mod tests {
             .query_row("SELECT rowid FROM articles_fts WHERE articles_fts MATCH 'randomizzato'", [], |r| r.get(0))
             .unwrap();
         assert_eq!(found, id);
+    }
+
+    #[test]
+    fn place_adds_or_moves_between_sections() {
+        let (_dir, mut lib) = library();
+        let med = crate::sections::create(&lib.conn, "Medicina", None).unwrap().id;
+        let cardio = crate::sections::create(&lib.conn, "Cardiologia", Some(med)).unwrap().id;
+        let stat = crate::sections::create(&lib.conn, "Statistica", None).unwrap().id;
+        let a = insert(&lib, "a.pdf");
+        let sorted = |lib: &Library| {
+            let mut ids = get(&lib.conn, a).unwrap().section_ids;
+            ids.sort();
+            ids
+        };
+
+        // Da una vista generale: si aggiunge.
+        place_in_section(&mut lib.conn, &[a], cardio, None).unwrap();
+        place_in_section(&mut lib.conn, &[a], stat, None).unwrap();
+        assert_eq!(sorted(&lib), [cardio, stat]);
+
+        // Da "Medicina" (che mostra anche Cardiologia) verso Statistica: si sposta.
+        place_in_section(&mut lib.conn, &[a], stat, Some(med)).unwrap();
+        assert_eq!(sorted(&lib), [stat]);
+
+        // Dentro una sottosezione della sezione d'origine: resta solo il bersaglio.
+        place_in_section(&mut lib.conn, &[a], med, None).unwrap();
+        place_in_section(&mut lib.conn, &[a], cardio, Some(med)).unwrap();
+        assert_eq!(sorted(&lib), [cardio, stat]);
+
+        assert!(matches!(place_in_section(&mut lib.conn, &[a], 999, None), Err(AppError::NotFound)));
     }
 
     #[test]

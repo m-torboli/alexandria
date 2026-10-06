@@ -107,6 +107,8 @@ pub fn list(conn: &Connection, view: View, query: &Query) -> AppResult<Vec<Artic
     match view {
         View::All => b.add(LIVE, []),
         View::ToRead => b.add(format!("{LIVE} AND a.reading_status = 0"), []),
+        View::Reading => b.add(format!("{LIVE} AND a.reading_status = 1"), []),
+        View::Read => b.add(format!("{LIVE} AND a.reading_status = 2"), []),
         View::Favorites => b.add(format!("{LIVE} AND a.favorite = 1"), []),
         View::Incomplete => b.add(format!("{LIVE} AND a.metadata_complete = 0"), []),
         View::Unclassified => b.add(
@@ -353,6 +355,8 @@ mod tests {
         assert_eq!(ids(&lib, View::Section { id: med.id }, q()), [heart]);
         assert_eq!(ids(&lib, View::Favorites, q()), [deep]);
         assert_eq!(ids(&lib, View::ToRead, q()), [heart]);
+        assert_eq!(ids(&lib, View::Read, q()), [deep]);
+        assert!(ids(&lib, View::Reading, q()).is_empty());
         assert_eq!(ids(&lib, View::Unclassified, q()), [deep]);
         assert_eq!(ids(&lib, View::Trash, q()), [stats]);
     }

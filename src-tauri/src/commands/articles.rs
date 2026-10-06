@@ -119,6 +119,17 @@ pub fn set_article_sections(state: State<AppState>, id: i64, section_ids: Vec<i6
     state.with_library(|lib| articles::set_sections(&mut lib.conn, id, &section_ids))
 }
 
+/// Trascinamento su una sezione: aggiunge, oppure sposta se `from_section` è indicata.
+#[tauri::command]
+pub fn place_articles(
+    state: State<AppState>,
+    ids: Vec<i64>,
+    section_id: i64,
+    from_section: Option<i64>,
+) -> AppResult<()> {
+    state.with_library(|lib| articles::place_in_section(&mut lib.conn, &ids, section_id, from_section))
+}
+
 #[tauri::command]
 pub fn set_article_tags(state: State<AppState>, id: i64, tag_ids: Vec<i64>) -> AppResult<()> {
     state.with_library(|lib| articles::set_tags(&mut lib.conn, id, &tag_ids))

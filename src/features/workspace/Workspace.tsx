@@ -6,6 +6,7 @@ import { ArticlePane } from "../articles/ArticlePane";
 import { DetailPane } from "../articles/DetailPane";
 import { useFileDrop } from "../import/useFileDrop";
 import { Sidebar } from "../sidebar/Sidebar";
+import { DragLayer } from "./DragLayer";
 import styles from "./Workspace.module.css";
 
 export function Workspace() {
@@ -13,11 +14,13 @@ export function Workspace() {
   useFileDrop();
 
   return (
-    <div className={styles.workspace}>
-      <Sidebar />
-      <ArticlePane />
-      <DetailPane />
-    </div>
+    <DragLayer>
+      <div className={styles.workspace}>
+        <Sidebar />
+        <ArticlePane />
+        <DetailPane />
+      </div>
+    </DragLayer>
   );
 }
 

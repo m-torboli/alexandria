@@ -31,6 +31,8 @@ export type OpenOutcome =
 export interface ViewCounts {
   all: number;
   toRead: number;
+  reading: number;
+  read: number;
   favorites: number;
   incomplete: number;
   unclassified: number;
@@ -204,6 +206,9 @@ export const api = {
   setArticleNotes: (id: number, notes: string) => call<void>("set_article_notes", { id, notes }),
   exportArticles: (view: View) => call<Article[]>("export_articles", { view }),
   saveBibliography: (path: string, contents: string) => call<void>("save_bibliography", { path, contents }),
+  /** Aggiunge alla sezione; con `fromSection` sposta (toglie dalla sezione d'origine). */
+  placeArticles: (ids: number[], sectionId: number, fromSection: number | null) =>
+    call<void>("place_articles", { ids, sectionId, fromSection }),
   setArticleSections: (id: number, sectionIds: number[]) => call<void>("set_article_sections", { id, sectionIds }),
   setArticleTags: (id: number, tagIds: number[]) => call<void>("set_article_tags", { id, tagIds }),
   trashArticles: (ids: number[]) => call<void>("trash_articles", { ids }),

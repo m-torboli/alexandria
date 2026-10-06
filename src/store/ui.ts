@@ -3,7 +3,15 @@ import { createJSONStorage, persist } from "zustand/middleware";
 
 import { safeStorage } from "./storage";
 
-export type FixedView = "all" | "toRead" | "favorites" | "incomplete" | "unclassified" | "trash";
+export type FixedView =
+  | "all"
+  | "toRead"
+  | "reading"
+  | "read"
+  | "favorites"
+  | "incomplete"
+  | "unclassified"
+  | "trash";
 
 export type View =
   | { kind: FixedView }

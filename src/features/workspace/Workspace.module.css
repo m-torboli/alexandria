@@ -3,3 +3,35 @@
   grid-template-columns: var(--sidebar-width) minmax(0, 1fr) var(--detail-width);
   height: 100%;
 }
+
+/* Anteprima di ciò che si trascina. */
+.dragPreview {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  max-width: 320px;
+  height: 28px;
+  padding: 0 6px 0 10px;
+  border-radius: var(--radius-md);
+  background: var(--bg-elevated);
+  box-shadow: var(--shadow-popover);
+  font-size: var(--text-md);
+  white-space: nowrap;
+  cursor: grabbing;
+}
+
+.dragLabel {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.dragMode {
+  flex-shrink: 0;
+  padding: 1px 7px;
+  border-radius: 9px;
+  background: var(--accent);
+  color: var(--on-accent);
+  font-size: var(--text-xs);
+  font-weight: 600;
+}

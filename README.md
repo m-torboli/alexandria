@@ -12,7 +12,8 @@ Requisiti: [Node.js](https://nodejs.org) LTS, [Rust](https://rustup.rs) e i
 
 ```bash
 npm install          # dipendenze dell'interfaccia
-npm run tauri dev    # avvia l'app in modalità sviluppo
+npm run app          # avvia l'app in sviluppo ("Alexandria Dev": impostazioni e
+                     # libreria separate dall'app installata, si possono usare insieme)
 npm test             # test dell'interfaccia
 npm run check        # controllo dei tipi TypeScript
 cd src-tauri && cargo test                # test del motore Rust

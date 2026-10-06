@@ -1,8 +1,7 @@
 import {
-  BookCheck,
-  BookOpen,
   BookOpenText,
   ExternalLink,
+  FolderInput,
   FolderOpen,
   Quote,
   RotateCcw,
@@ -11,13 +10,16 @@ import {
   Trash2,
 } from "lucide-react";
 
-import { ContextContent, ContextItem, ContextSeparator } from "../../components/Menu";
+import { ContextContent, ContextItem, ContextSeparator, ContextSub } from "../../components/Menu";
 import { api, metadataOf, type ArticleSummary, type ReadingStatus } from "../../lib/api";
 import { copyApa } from "../../lib/export";
-import { ARTICLE_DEPENDENT, useAction } from "../../lib/queries";
+import { ARTICLE_DEPENDENT, useAction, useSections } from "../../lib/queries";
+import { visibleRows } from "../../lib/sectionTree";
+import { READING_STATUS } from "../../lib/views";
 import { confirm } from "../../store/confirm";
-import { showError } from "../../store/toast";
+import { showError, useToasts } from "../../store/toast";
 import { useUi } from "../../store/ui";
+import styles from "./Articles.module.css";
 
 /** Azioni sugli articoli, condivise da elenco, menu e pannello di dettaglio. */
 export function useArticleActions() {
@@ -26,6 +28,7 @@ export function useArticleActions() {
   const trashMany = useAction(api.trashArticles, ARTICLE_DEPENDENT);
   const restoreMany = useAction(api.restoreArticles, ARTICLE_DEPENDENT);
   const deleteMany = useAction(api.deleteArticlesForever, ARTICLE_DEPENDENT);
+  const place = useAction(api.placeArticles, ARTICLE_DEPENDENT);
 
   return {
     /** Apre il lettore integrato. */
@@ -42,6 +45,14 @@ export function useArticleActions() {
     },
     setStatus: (id: number, status: ReadingStatus) => setStatus(id, status),
     setFavorite: (id: number, favorite: boolean) => setFavorite(id, favorite),
+    /** Sposta nella sezione (se si sta guardando una sezione) o vi aggiunge l'articolo. */
+    placeIn: async (id: number, sectionId: number, sectionName: string) => {
+      const view = useUi.getState().view;
+      const from = view.kind === "section" ? view.id : null;
+      if (from === sectionId) return;
+      await place([id], sectionId, from);
+      useToasts.getState().show(from !== null ? `Spostato in “${sectionName}”.` : `Aggiunto a “${sectionName}”.`);
+    },
     trash: (id: number) => trashMany([id]),
     restore: (id: number) => restoreMany([id]),
     deleteForever: async (id: number) => {
@@ -57,8 +68,15 @@ export function useArticleActions() {
   };
 }
 
+/** Pallino colorato dello stato, per menu e selettori. */
+export function StatusDot({ status }: { status: ReadingStatus }) {
+  return <span className={styles.statusDot} style={{ background: READING_STATUS[status].color }} />;
+}
+
 export function ArticleMenu({ article }: { article: ArticleSummary }) {
   const actions = useArticleActions();
+  const sections = useSections().data ?? [];
+  const inSection = useUi((s) => (s.view.kind === "section" ? s.view.id : null));
   const { id } = article;
 
   if (article.deletedAt) {
@@ -75,6 +93,8 @@ export function ArticleMenu({ article }: { article: ArticleSummary }) {
     );
   }
 
+  const otherStatuses = ([0, 1, 2] as ReadingStatus[]).filter((s) => s !== article.readingStatus);
+
   return (
     <ContextContent>
       <ContextItem icon={<BookOpenText size={14} />} onSelect={() => actions.read(id)}>
@@ -87,19 +107,29 @@ export function ArticleMenu({ article }: { article: ArticleSummary }) {
         Mostra nella cartella
       </ContextItem>
       <ContextSeparator />
+      {sections.length > 0 && (
+        <ContextSub icon={<FolderInput size={14} />} label={inSection !== null ? "Sposta in sezione" : "Aggiungi a sezione"}>
+          {visibleRows(sections, () => true).map(({ section, depth }) => (
+            <ContextItem
+              key={section.id}
+              disabled={section.id === inSection}
+              style={{ paddingLeft: 8 + depth * 14 }}
+              onSelect={() => actions.placeIn(id, section.id, section.name)}
+            >
+              {section.name}
+            </ContextItem>
+          ))}
+        </ContextSub>
+      )}
       <ContextItem icon={<Quote size={14} />} onSelect={() => actions.copyApa(id)}>
         Copia citazione APA
       </ContextItem>
       <ContextSeparator />
-      {article.readingStatus === 2 ? (
-        <ContextItem icon={<BookOpen size={14} />} onSelect={() => actions.setStatus(id, 0)}>
-          Segna come da leggere
+      {otherStatuses.map((status) => (
+        <ContextItem key={status} icon={<StatusDot status={status} />} onSelect={() => actions.setStatus(id, status)}>
+          Segna come {READING_STATUS[status].label.toLowerCase()}
         </ContextItem>
-      ) : (
-        <ContextItem icon={<BookCheck size={14} />} onSelect={() => actions.setStatus(id, 2)}>
-          Segna come letto
-        </ContextItem>
-      )}
+      ))}
       <ContextItem
         icon={article.favorite ? <StarOff size={14} /> : <Star size={14} />}
         onSelect={() => actions.setFavorite(id, !article.favorite)}

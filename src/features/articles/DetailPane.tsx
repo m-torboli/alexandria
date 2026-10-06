@@ -38,7 +38,8 @@ import { visibleRows } from "../../lib/sectionTree";
 import { useToasts } from "../../store/toast";
 import { useUi } from "../../store/ui";
 import { TagDot } from "../sidebar/TagList";
-import { useArticleActions } from "./ArticleMenu";
+import { READING_STATUS } from "../../lib/views";
+import { StatusDot, useArticleActions } from "./ArticleMenu";
 import styles from "./Detail.module.css";
 import { EditableText } from "./EditableText";
 
@@ -60,11 +61,10 @@ export function DetailPane() {
   );
 }
 
-const STATUS_OPTIONS: { value: ReadingStatus; label: string }[] = [
-  { value: 0, label: "Da leggere" },
-  { value: 1, label: "In lettura" },
-  { value: 2, label: "Letto" },
-];
+const STATUS_OPTIONS: { value: ReadingStatus; label: string }[] = ([0, 1, 2] as ReadingStatus[]).map((value) => ({
+  value,
+  label: READING_STATUS[value].label,
+}));
 
 function ArticleDetail({ article }: { article: Article }) {
   const actions = useArticleActions();
@@ -221,6 +221,7 @@ function ArticleDetail({ article }: { article: Article }) {
                 className={clsx(styles.segment, article.readingStatus === value && styles.segmentOn)}
                 onClick={() => actions.setStatus(article.id, value)}
               >
+                <StatusDot status={value} />
                 {label}
               </button>
             ))}

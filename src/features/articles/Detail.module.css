@@ -146,7 +146,11 @@
 }
 
 .segment {
+  display: flex;
   flex: 1;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
   height: 24px;
   border: none;
   border-radius: 5px;

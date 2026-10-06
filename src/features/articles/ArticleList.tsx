@@ -1,11 +1,14 @@
 import clsx from "clsx";
 import { Star } from "lucide-react";
-import { useEffect, useRef, type HTMLAttributes, type KeyboardEvent } from "react";
+import { useDraggable } from "@dnd-kit/core";
+import { useEffect, useRef, type HTMLAttributes, type KeyboardEvent, type Ref } from "react";
 
 import { ContextRoot, ContextTrigger } from "../../components/Menu";
 import type { ArticleSummary } from "../../lib/api";
 import { shortAuthors } from "../../lib/authors";
 import { highlight, parseSnippet, snippetText, type Segment } from "../../lib/highlight";
+import { READING_STATUS } from "../../lib/views";
+import type { DragItem } from "../../store/drag";
 import { useUi } from "../../store/ui";
 import { ArticleMenu, useArticleActions } from "./ArticleMenu";
 import styles from "./Articles.module.css";
@@ -71,22 +74,40 @@ interface ArticleRowProps extends HTMLAttributes<HTMLDivElement> {
   selected: boolean;
   onSelect: () => void;
   onOpen: () => void;
+  ref?: Ref<HTMLDivElement>;
 }
 
-function ArticleRow({ article, terms, selected, onSelect, onOpen, ...props }: ArticleRowProps) {
+function ArticleRow({ article, terms, selected, onSelect, onOpen, ref, ...props }: ArticleRowProps) {
   const details = [shortAuthors(article.authors), article.journal].filter(Boolean).join(" · ");
   const snippet = usefulSnippet(article);
+  // Gli articoli si trascinano sulle sezioni della barra laterale (non dal Cestino).
+  const { setNodeRef, listeners, isDragging } = useDraggable({
+    id: `article-${article.id}`,
+    data: { type: "article", articleIds: [article.id], label: article.title || "Senza titolo" } satisfies DragItem,
+    disabled: article.deletedAt !== null,
+  });
 
   return (
     <div
       {...props}
+      {...listeners}
+      ref={(node) => {
+        setNodeRef(node);
+        if (typeof ref === "function") ref(node);
+        else if (ref) ref.current = node;
+      }}
       role="option"
       aria-selected={selected}
-      className={clsx(styles.row, selected && styles.rowSelected)}
+      className={clsx(styles.row, selected && styles.rowSelected, isDragging && styles.rowDragging)}
       onClick={onSelect}
       onDoubleClick={onOpen}
     >
-      <span className={styles.status} data-status={article.readingStatus} aria-hidden />
+      <span
+        className={styles.status}
+        data-status={article.readingStatus}
+        title={READING_STATUS[article.readingStatus].label}
+        aria-label={READING_STATUS[article.readingStatus].label}
+      />
       <div className={styles.rowMain}>
         <div className={styles.rowTitle}>
           <Highlighted segments={highlight(article.title || "Senza titolo", terms)} />

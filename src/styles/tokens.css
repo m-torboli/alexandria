@@ -51,6 +51,11 @@
 
   --highlight: rgba(255, 204, 0, 0.38);
 
+  /* Stati di lettura */
+  --status-to-read: #0a7aff;
+  --status-reading: #ffbf00;
+  --status-read: #28b84c;
+
   --tag-red: #ff3b30;
   --tag-orange: #ff9500;
   --tag-yellow: #ffcc00;
@@ -85,6 +90,10 @@
 
     --highlight: rgba(255, 214, 10, 0.3);
 
+    --status-to-read: #0a84ff;
+    --status-reading: #ffd60a;
+    --status-read: #30d158;
+
     --tag-red: #ff453a;
     --tag-orange: #ff9f0a;
     --tag-yellow: #ffd60a;
@@ -117,6 +126,9 @@
   --shadow-dialog: 0 0 0 0.5px rgba(255, 255, 255, 0.1), 0 24px 64px rgba(0, 0, 0, 0.6);
   --overlay: rgba(0, 0, 0, 0.4);
   --highlight: rgba(255, 214, 10, 0.3);
+  --status-to-read: #0a84ff;
+  --status-reading: #ffd60a;
+  --status-read: #30d158;
 
   --tag-red: #ff453a;
   --tag-orange: #ff9f0a;
