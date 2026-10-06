@@ -9,6 +9,7 @@ use crate::error::{AppError, AppResult};
 const MIGRATIONS: &[&str] = &[
     include_str!("migrations/001_init.sql"),
     include_str!("migrations/002_article_text.sql"),
+    include_str!("migrations/003_search.sql"),
 ];
 
 /// Apre (o crea) il database della libreria e lo porta all'ultima versione.

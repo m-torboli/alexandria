@@ -11,12 +11,18 @@ use crate::{
     error::{AppError, AppResult},
     importer::{self, ImportOutcome},
     metadata,
+    query::{self, FilterOptions, Query},
     state::AppState,
 };
 
 #[tauri::command]
-pub fn list_articles(state: State<AppState>, view: View) -> AppResult<Vec<ArticleSummary>> {
-    state.with_library(|lib| articles::list(&lib.conn, view))
+pub fn list_articles(state: State<AppState>, view: View, query: Option<Query>) -> AppResult<Vec<ArticleSummary>> {
+    state.with_library(|lib| query::list(&lib.conn, view, &query.unwrap_or_default()))
+}
+
+#[tauri::command]
+pub fn filter_options(state: State<AppState>) -> AppResult<FilterOptions> {
+    state.with_library(|lib| query::filter_options(&lib.conn))
 }
 
 #[tauri::command]

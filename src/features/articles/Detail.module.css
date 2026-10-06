@@ -114,6 +114,27 @@
   line-height: 1.45;
 }
 
+.authorsSummary {
+  display: block;
+  width: calc(100% + 12px);
+  margin: 4px 0 0 -6px;
+  padding: 3px 6px;
+  border: none;
+  border-radius: var(--radius-sm);
+  background: transparent;
+  color: var(--text-secondary);
+  line-height: 1.45;
+  text-align: left;
+}
+
+.authorsSummary:hover {
+  background: var(--bg-hover);
+}
+
+.more {
+  color: var(--accent);
+}
+
 /* ── Stato di lettura ───────────────────────────────────────────────────── */
 
 .segmented {

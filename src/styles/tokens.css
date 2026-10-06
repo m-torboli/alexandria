@@ -49,6 +49,8 @@
   --shadow-dialog: 0 0 0 0.5px rgba(0, 0, 0, 0.1), 0 24px 64px rgba(0, 0, 0, 0.22);
   --overlay: rgba(0, 0, 0, 0.18);
 
+  --highlight: rgba(255, 204, 0, 0.38);
+
   --tag-red: #ff3b30;
   --tag-orange: #ff9500;
   --tag-yellow: #ffcc00;
@@ -81,6 +83,8 @@
     --shadow-dialog: 0 0 0 0.5px rgba(255, 255, 255, 0.1), 0 24px 64px rgba(0, 0, 0, 0.6);
     --overlay: rgba(0, 0, 0, 0.4);
 
+    --highlight: rgba(255, 214, 10, 0.3);
+
     --tag-red: #ff453a;
     --tag-orange: #ff9f0a;
     --tag-yellow: #ffd60a;
@@ -112,6 +116,7 @@
   --shadow-popover: 0 0 0 0.5px rgba(255, 255, 255, 0.12), 0 8px 28px rgba(0, 0, 0, 0.5);
   --shadow-dialog: 0 0 0 0.5px rgba(255, 255, 255, 0.1), 0 24px 64px rgba(0, 0, 0, 0.6);
   --overlay: rgba(0, 0, 0, 0.4);
+  --highlight: rgba(255, 214, 10, 0.3);
 
   --tag-red: #ff453a;
   --tag-orange: #ff9f0a;

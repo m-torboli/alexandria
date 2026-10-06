@@ -6,7 +6,7 @@ use std::{
 use rusqlite::Connection;
 use serde::Serialize;
 
-use crate::{db, error::AppResult, importer};
+use crate::{db, error::AppResult, importer, search};
 
 pub const DB_FILE: &str = "alexandria.db";
 pub const PDF_DIR: &str = "pdf";
@@ -41,6 +41,7 @@ impl Library {
         fs::create_dir_all(root.join(BACKUP_DIR))?;
         importer::clean_staging(&root.join(PDF_DIR));
         let conn = db::open(&root.join(DB_FILE))?;
+        search::ensure_index(&conn)?;
         Ok(Self {
             root: root.to_path_buf(),
             conn,

@@ -1,0 +1,23 @@
+.content {
+  max-height: min(420px, var(--radix-popover-content-available-height));
+  display: flex;
+  flex-direction: column;
+  padding: 6px;
+  background: var(--bg-elevated);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-popover);
+  z-index: 50;
+  animation: appear var(--duration) var(--ease);
+  transform-origin: var(--radix-popover-content-transform-origin);
+}
+
+.content:focus {
+  outline: none;
+}
+
+@keyframes appear {
+  from {
+    opacity: 0;
+    transform: scale(0.97);
+  }
+}

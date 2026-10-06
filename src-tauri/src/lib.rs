@@ -6,6 +6,8 @@ mod files;
 mod importer;
 mod library;
 mod metadata;
+mod query;
+mod search;
 mod sections;
 mod settings;
 mod state;
@@ -45,6 +47,7 @@ pub fn run() {
             org::update_tag,
             org::delete_tag,
             art::list_articles,
+            art::filter_options,
             art::get_article,
             art::import_pdf,
             art::read_article_pdf,

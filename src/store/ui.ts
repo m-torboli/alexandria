@@ -1,5 +1,7 @@
 import { create } from "zustand";
-import { createJSONStorage, persist, type StateStorage } from "zustand/middleware";
+import { createJSONStorage, persist } from "zustand/middleware";
+
+import { safeStorage } from "./storage";
 
 export type FixedView = "all" | "toRead" | "favorites" | "incomplete" | "unclassified" | "trash";
 
@@ -24,31 +26,6 @@ export const sameView = (a: View, b: View) =>
 
 /** La sezione aperta, se la vista corrente è una sezione. */
 export const currentSectionId = (view: View) => (view.kind === "section" ? view.id : null);
-
-// localStorage può non essere disponibile: in quel caso si rinuncia a ricordare.
-const safeStorage: StateStorage = {
-  getItem: (name) => {
-    try {
-      return localStorage.getItem(name);
-    } catch {
-      return null;
-    }
-  },
-  setItem: (name, value) => {
-    try {
-      localStorage.setItem(name, value);
-    } catch {
-      /* ignorato */
-    }
-  },
-  removeItem: (name) => {
-    try {
-      localStorage.removeItem(name);
-    } catch {
-      /* ignorato */
-    }
-  },
-};
 
 export const useUi = create<UiState>()(
   persist(

@@ -17,6 +17,7 @@ use crate::{
     error::{AppError, AppResult},
     files,
     library::Library,
+    search,
 };
 
 const STAGING_PREFIX: &str = ".importing-";
@@ -112,6 +113,7 @@ fn register(lib: &mut Library, staged: &Staged, section_id: Option<i64>) -> AppR
         if let Some(section) = section_id {
             articles::add_to_section(&tx, id, section)?;
         }
+        search::reindex(&tx, id)?;
         Ok(id)
     })();
     match inserted {
@@ -147,7 +149,7 @@ fn staging_name() -> String {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::{articles::View, sections};
+    use crate::{articles::View, query, sections};
 
     fn setup() -> (tempfile::TempDir, Library, PathBuf) {
         let dir = tempfile::tempdir().unwrap();
@@ -201,7 +203,7 @@ mod tests {
 
         articles::move_to_trash(&lib.conn, &[first.article_id]).unwrap();
         assert_eq!(import(&mut lib, &source, None).status, ImportStatus::DuplicateInTrash);
-        assert_eq!(articles::list(&lib.conn, View::All).unwrap().len(), 0);
+        assert_eq!(query::list(&lib.conn, View::All, &Default::default()).unwrap().len(), 0);
     }
 
     #[test]

@@ -35,6 +35,8 @@ src-tauri/src/           motore (Rust)
   articles.rs            articoli: elenco, metadati, organizzazione, Cestino
   importer.rs            importazione dei PDF e riconoscimento dei duplicati
   metadata.rs            metadati da DOI (doi.org, CSL-JSON)
+  search.rs              indice di ricerca a testo completo (SQLite FTS5)
+  query.rs               elenco articoli: vista, ricerca, filtri, ordinamento
   files.rs               nomi leggibili, impronta SHA-256
   sections.rs, tags.rs   sezioni e tag
   commands/              comandi esposti all'interfaccia
@@ -51,3 +53,11 @@ src-tauri/src/           motore (Rust)
 
 Ogni passo dopo la copia è facoltativo: se fallisce, l'articolo resta in libreria
 nella vista "Da completare".
+
+## Ricerca
+
+L'indice FTS5 contiene titolo, autori, rivista, anno, abstract, note e testo del PDF,
+con pesi diversi (il titolo conta più del testo). Maiuscole e accenti non contano e
+ogni parola vale anche come inizio di parola (`cardio` trova *cardiologia*); le frasi
+tra virgolette si cercano esatte. L'indice si aggiorna a ogni modifica e, se non è
+allineato, si ricostruisce da solo all'apertura della libreria.

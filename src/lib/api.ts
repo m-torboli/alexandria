@@ -86,6 +86,34 @@ export interface ArticleSummary {
   metadataComplete: boolean;
   addedAt: string;
   deletedAt: string | null;
+  /** Durante una ricerca: estratto con i termini tra i caratteri \u0002 e \u0003. */
+  snippet: string | null;
+}
+
+export interface Filters {
+  authorIds: number[];
+  journals: string[];
+  tagIds: number[];
+  yearFrom: number | null;
+  yearTo: number | null;
+  statuses: ReadingStatus[];
+  favoritesOnly: boolean;
+  addedWithinDays: number | null;
+}
+
+export type SortKey = "relevance" | "added" | "yearDesc" | "yearAsc" | "title" | "author";
+
+export interface ArticleQuery {
+  text: string;
+  filters: Filters;
+  sort: SortKey;
+}
+
+export interface FilterOptions {
+  authors: (Author & { id: number; count: number })[];
+  journals: { name: string; count: number }[];
+  minYear: number | null;
+  maxYear: number | null;
 }
 
 export interface Article extends Metadata {
@@ -153,7 +181,8 @@ export const api = {
   updateTag: (id: number, name: string, color: TagColor) => call<void>("update_tag", { id, name, color }),
   deleteTag: (id: number) => call<void>("delete_tag", { id }),
 
-  listArticles: (view: View) => call<ArticleSummary[]>("list_articles", { view }),
+  listArticles: (view: View, query?: ArticleQuery) => call<ArticleSummary[]>("list_articles", { view, query }),
+  filterOptions: () => call<FilterOptions>("filter_options"),
   getArticle: (id: number) => call<Article>("get_article", { id }),
   importPdf: (path: string, sectionId: number | null) => call<ImportOutcome>("import_pdf", { path, sectionId }),
   readArticlePdf: async (id: number) => new Uint8Array(await call<ArrayBuffer>("read_article_pdf", { id })),

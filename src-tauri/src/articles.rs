@@ -2,14 +2,14 @@
 
 use std::{collections::HashMap, fs};
 
-use rusqlite::{params, Connection, OptionalExtension, Row};
+use rusqlite::{params, Connection, OptionalExtension};
 use serde::{Deserialize, Serialize};
 
 use crate::{
     error::{AppError, AppResult},
     files,
     library::Library,
-    metadata,
+    metadata, search,
 };
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
@@ -50,6 +50,9 @@ pub struct ArticleSummary {
     pub metadata_complete: bool,
     pub added_at: String,
     pub deleted_at: Option<String>,
+    /// Durante una ricerca: estratto del testo in cui compaiono i termini,
+    /// con i termini racchiusi tra i caratteri \u{2} e \u{3}.
+    pub snippet: Option<String>,
 }
 
 /// Articolo completo, per il pannello di dettaglio.
@@ -90,74 +93,6 @@ pub enum View {
 const NOW: &str = "strftime('%Y-%m-%dT%H:%M:%fZ', 'now')";
 
 // ── Lettura ─────────────────────────────────────────────────────────────────
-
-pub fn list(conn: &Connection, view: View) -> AppResult<Vec<ArticleSummary>> {
-    let live = "a.deleted_at IS NULL";
-    let (cte, condition, param) = match view {
-        View::All => ("", live.to_string(), None),
-        View::ToRead => ("", format!("{live} AND a.reading_status = 0"), None),
-        View::Favorites => ("", format!("{live} AND a.favorite = 1"), None),
-        View::Incomplete => ("", format!("{live} AND a.metadata_complete = 0"), None),
-        View::Unclassified => (
-            "",
-            format!("{live} AND NOT EXISTS (SELECT 1 FROM article_sections x WHERE x.article_id = a.id)"),
-            None,
-        ),
-        View::Trash => ("", "a.deleted_at IS NOT NULL".to_string(), None),
-        View::Section { id } => (
-            "WITH RECURSIVE subtree(id) AS (
-                 SELECT ?1 UNION ALL SELECT s.id FROM sections s JOIN subtree ON s.parent_id = subtree.id
-             )",
-            format!(
-                "{live} AND EXISTS (SELECT 1 FROM article_sections x JOIN subtree ON subtree.id = x.section_id
-                                    WHERE x.article_id = a.id)"
-            ),
-            Some(id),
-        ),
-        View::Tag { id } => (
-            "",
-            format!("{live} AND EXISTS (SELECT 1 FROM article_tags x WHERE x.article_id = a.id AND x.tag_id = ?1)"),
-            Some(id),
-        ),
-    };
-    let order = match view {
-        View::Trash => "a.deleted_at DESC, a.id DESC",
-        _ => "a.added_at DESC, a.id DESC",
-    };
-    let sql = format!(
-        "{cte} SELECT a.id, a.title, a.year, a.journal, a.reading_status, a.favorite, a.metadata_complete,
-                      a.added_at, a.deleted_at
-               FROM articles a WHERE {condition} ORDER BY {order}"
-    );
-
-    let mut authors = authors_by_article(conn)?;
-    let mut stmt = conn.prepare(&sql)?;
-    let map_row = |row: &Row| {
-        Ok(ArticleSummary {
-            id: row.get(0)?,
-            title: row.get(1)?,
-            authors: Vec::new(),
-            year: row.get(2)?,
-            journal: row.get(3)?,
-            reading_status: row.get(4)?,
-            favorite: row.get(5)?,
-            metadata_complete: row.get(6)?,
-            added_at: row.get(7)?,
-            deleted_at: row.get(8)?,
-        })
-    };
-    let rows = match param {
-        Some(id) => stmt.query_map([id], map_row)?.collect::<Result<Vec<_>, _>>()?,
-        None => stmt.query_map([], map_row)?.collect::<Result<Vec<_>, _>>()?,
-    };
-    Ok(rows
-        .into_iter()
-        .map(|mut a| {
-            a.authors = authors.remove(&a.id).unwrap_or_default();
-            a
-        })
-        .collect())
-}
 
 pub fn get(conn: &Connection, id: i64) -> AppResult<Article> {
     let mut article = conn
@@ -207,7 +142,7 @@ pub fn get(conn: &Connection, id: i64) -> AppResult<Article> {
     Ok(article)
 }
 
-fn authors_by_article(conn: &Connection) -> AppResult<HashMap<i64, Vec<Author>>> {
+pub(crate) fn authors_by_article(conn: &Connection) -> AppResult<HashMap<i64, Vec<Author>>> {
     let mut stmt = conn.prepare_cached(
         "SELECT aa.article_id, au.family, au.given
          FROM article_authors aa JOIN authors au ON au.id = aa.author_id
@@ -271,6 +206,7 @@ pub fn update_metadata(lib: &mut Library, id: i64, metadata: Metadata) -> AppRes
         return Err(AppError::NotFound);
     }
     replace_authors(&tx, id, &m.authors)?;
+    search::reindex(&tx, id)?;
     tx.commit()?;
 
     rename_file(lib, id);
@@ -313,6 +249,7 @@ pub fn save_pdf_info(
         params![id, text],
     )?;
     lib.conn.execute("UPDATE articles SET page_count = ?2 WHERE id = ?1", params![id, page_count])?;
+    search::reindex(&lib.conn, id)?;
 
     let article = get(&lib.conn, id)?;
     match suggested_title.map(str::trim).filter(|t| !t.is_empty()) {
@@ -486,8 +423,11 @@ pub fn delete_forever(lib: &mut Library, ids: &[i64]) -> AppResult<()> {
                 |r| r.get(0),
             )
             .optional()?;
-        if let Some(Some(name)) = file {
-            files_to_remove.push(dir.join(name));
+        if let Some(file) = file {
+            search::remove(&tx, *id)?;
+            if let Some(name) = file {
+                files_to_remove.push(dir.join(name));
+            }
         }
     }
     remove_orphan_authors(&tx)?;
@@ -526,7 +466,6 @@ pub fn file_path(lib: &Library, id: i64) -> AppResult<std::path::PathBuf> {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::sections;
 
     fn library() -> (tempfile::TempDir, Library) {
         let dir = tempfile::tempdir().unwrap();
@@ -613,26 +552,11 @@ mod tests {
     }
 
     #[test]
-    fn views_filter_articles() {
-        let (_dir, mut lib) = library();
-        let med = sections::create(&lib.conn, "Medicina", None).unwrap();
-        let cardio = sections::create(&lib.conn, "Cardiologia", Some(med.id)).unwrap();
-        let a = insert(&lib, "a.pdf");
-        let b = insert(&lib, "b.pdf");
-        let c = insert(&lib, "c.pdf");
-        set_sections(&mut lib.conn, a, &[cardio.id]).unwrap();
-        set_favorite(&lib.conn, b, true).unwrap();
-        set_reading_status(&lib.conn, b, 2).unwrap();
-        move_to_trash(&lib.conn, &[c]).unwrap();
-
-        let ids = |view| list(&lib.conn, view).unwrap().into_iter().map(|a| a.id).collect::<Vec<_>>();
-        assert_eq!(ids(View::All), [b, a]);
-        assert_eq!(ids(View::Section { id: med.id }), [a]);
-        assert_eq!(ids(View::Favorites), [b]);
-        assert_eq!(ids(View::ToRead), [a]);
-        assert_eq!(ids(View::Unclassified), [b]);
-        assert_eq!(ids(View::Trash), [c]);
-        assert!(set_reading_status(&lib.conn, a, 7).is_err());
+    fn rejects_invalid_reading_status() {
+        let (_dir, lib) = library();
+        let id = insert(&lib, "a.pdf");
+        assert!(set_reading_status(&lib.conn, id, 7).is_err());
+        set_reading_status(&lib.conn, id, 1).unwrap();
     }
 
     #[test]

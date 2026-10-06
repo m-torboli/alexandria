@@ -1,8 +1,8 @@
-import { QueryClient, useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { keepPreviousData, QueryClient, useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 
 import { showError } from "../store/toast";
 import type { View } from "../store/ui";
-import { api, type Article } from "./api";
+import { api, type Article, type ArticleQuery } from "./api";
 
 export const queryClient = new QueryClient({
   defaultOptions: {
@@ -18,22 +18,37 @@ export const keys = {
   tags: ["tags"],
   /** Prefisso di tutti gli elenchi di articoli. */
   articles: ["articles"],
-  articleList: (view: View) => ["articles", view] as const,
+  articleList: (view: View, query: ArticleQuery) => ["articles", view, query] as const,
+  filterOptions: ["filterOptions"],
   /** Prefisso di tutti i dettagli. */
   article: ["article"],
   articleDetail: (id: number) => ["article", id] as const,
 } as const;
 
 /** Dati che dipendono dagli articoli: dopo ogni modifica vanno ricaricati. */
-export const ARTICLE_DEPENDENT = [keys.articles, keys.article, keys.counts, keys.sections, keys.tags] as const;
+export const ARTICLE_DEPENDENT = [
+  keys.articles,
+  keys.article,
+  keys.counts,
+  keys.sections,
+  keys.tags,
+  keys.filterOptions,
+] as const;
 
 export const useAppStatus = () => useQuery({ queryKey: keys.status, queryFn: api.appStatus });
 export const useViewCounts = () => useQuery({ queryKey: keys.counts, queryFn: api.viewCounts });
 export const useSections = () => useQuery({ queryKey: keys.sections, queryFn: api.listSections });
 export const useTags = () => useQuery({ queryKey: keys.tags, queryFn: api.listTags });
 
-export const useArticles = (view: View) =>
-  useQuery({ queryKey: keys.articleList(view), queryFn: () => api.listArticles(view) });
+export const useArticles = (view: View, query: ArticleQuery) =>
+  useQuery({
+    queryKey: keys.articleList(view, query),
+    queryFn: () => api.listArticles(view, query),
+    // Mentre si digita resta visibile l'elenco precedente: niente sfarfallii.
+    placeholderData: keepPreviousData,
+  });
+
+export const useFilterOptions = () => useQuery({ queryKey: keys.filterOptions, queryFn: api.filterOptions });
 
 export const useArticle = (id: number | null) =>
   useQuery({

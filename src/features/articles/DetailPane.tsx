@@ -23,7 +23,7 @@ import {
   DropdownSeparator,
   DropdownTrigger,
 } from "../../components/Menu";
-import { api, metadataOf, type Article, type Metadata, type ReadingStatus } from "../../lib/api";
+import { api, metadataOf, type Article, type Author, type Metadata, type ReadingStatus } from "../../lib/api";
 import { formatAuthors, parseAuthors } from "../../lib/authors";
 import { formatBytes, formatDate } from "../../lib/format";
 import { ARTICLE_DEPENDENT, useAction, useArticle, useSections, useTags } from "../../lib/queries";
@@ -173,14 +173,7 @@ function ArticleDetail({ article }: { article: Article }) {
           placeholder="Titolo"
           onCommit={(title) => save({ title })}
         />
-        <EditableText
-          multiline
-          aria-label="Autori"
-          className={styles.authors}
-          value={formatAuthors(article.authors)}
-          placeholder="Autori (Cognome, Nome; Cognome, Nome)"
-          onCommit={(text) => save({ authors: parseAuthors(text) })}
-        />
+        <AuthorsField authors={article.authors} onCommit={(authors) => save({ authors })} />
 
         {!trashed && (
           <div className={styles.segmented} role="radiogroup" aria-label="Stato di lettura">
@@ -281,6 +274,32 @@ function ArticleDetail({ article }: { article: Article }) {
         </section>
       </div>
     </>
+  );
+}
+
+/** Oltre questo numero gli autori si mostrano riassunti, con "e altri N". */
+const AUTHORS_PREVIEW = 6;
+
+function AuthorsField({ authors, onCommit }: { authors: Author[]; onCommit: (authors: Author[]) => void }) {
+  const [expanded, setExpanded] = useState(false);
+
+  if (authors.length > AUTHORS_PREVIEW && !expanded) {
+    return (
+      <button type="button" className={styles.authorsSummary} onClick={() => setExpanded(true)}>
+        {formatAuthors(authors.slice(0, 3))}
+        <span className={styles.more}> e altri {authors.length - 3} autori</span>
+      </button>
+    );
+  }
+  return (
+    <EditableText
+      multiline
+      aria-label="Autori"
+      className={styles.authors}
+      value={formatAuthors(authors)}
+      placeholder="Autori (Cognome, Nome; Cognome, Nome)"
+      onCommit={(text) => onCommit(parseAuthors(text))}
+    />
   );
 }
 
